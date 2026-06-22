@@ -1,0 +1,7 @@
+requests>=2.31.0
+gspread>=6.1.2
+google-auth>=2.29.0
+google-auth-oauthlib>=1.2.0
+ntscraper>=0.3.8
+schedule>=1.2.1
+python-dotenv>=1.0.1

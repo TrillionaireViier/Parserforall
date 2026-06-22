@@ -1,0 +1,14 @@
+[Unit]
+Description=Crypto Ban Monitor Parser
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+WorkingDirectory=/path/to/Parserforall
+ExecStart=/path/to/Parserforall/venv/bin/python parser.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
