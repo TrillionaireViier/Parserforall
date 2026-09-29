@@ -216,11 +216,48 @@ def fetch_twitter(seen: set) -> list[list]:
 # ─── THREADS ─────────────────────────────────────────────────────────────────
 
 def fetch_threads(seen: set) -> list[list]:
-    """Search Threads via web scraping parser."""
+    """Search Threads via Playwright headless browser (or HTTP fallback)."""
     if not config.THREADS_SEARCH_ENABLED:
         return []
 
     results = []
+
+    # Try Playwright Headless Browser first (best for GitHub Actions)
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+            page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+            
+            for kw in config.ALL_KEYWORDS[:8]:
+                try:
+                    url = f"https://www.threads.net/search?q={requests.utils.quote(kw)}&serp_type=default"
+                    page.goto(url, wait_until="domcontentloaded", timeout=12000)
+                    time.sleep(2)
+                    content = page.content()
+                    
+                    matches = re.findall(r'"identifier":"(\d+)"', content)
+                    texts = re.findall(r'"text":"([^"]{15,500})"', content)
+                    users = re.findall(r'"username":"([^"]+)"', content)
+
+                    for j, mid in enumerate(matches):
+                        if mid in seen:
+                            continue
+                        text = texts[j] if j < len(texts) else kw
+                        user = users[j] if j < len(users) else "user"
+                        post_url = f"https://www.threads.net/@{user}/post/{mid}"
+                        lang = detect_language(text)
+                        seen.add(mid)
+                        results.append([now_utc(), "Threads", f"@{user}", lang, post_url, text.replace("\n", " ")])
+                except Exception as e:
+                    log.debug("Threads Playwright page error for '%s': %s", kw, e)
+            browser.close()
+            log.info("Threads (Playwright): found %d new matching posts.", len(results))
+            return results
+    except Exception as e:
+        log.warning("Playwright not available or failed (%s), using HTTP request fallback.", e)
+
+    # HTTP Fallback
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "X-IG-App-ID": "238260118697367",
@@ -231,7 +268,6 @@ def fetch_threads(seen: set) -> list[list]:
         try:
             url = f"https://www.threads.net/search?q={requests.utils.quote(kw)}&serp_type=default"
             resp = requests.get(url, headers=headers, timeout=10)
-            
             matches = re.findall(r'"identifier":"(\d+)"', resp.text)
             texts = re.findall(r'"text":"([^"]{15,500})"', resp.text)
             users = re.findall(r'"username":"([^"]+)"', resp.text)
@@ -246,9 +282,9 @@ def fetch_threads(seen: set) -> list[list]:
                 seen.add(mid)
                 results.append([now_utc(), "Threads", f"@{user}", lang, post_url, text.replace("\n", " ")])
         except Exception as e:
-            log.debug("Threads scrape error for '%s': %s", kw, e)
+            log.debug("Threads HTTP scrape error for '%s': %s", kw, e)
 
-    log.info("Threads: found %d new matching posts.", len(results))
+    log.info("Threads (HTTP): found %d new matching posts.", len(results))
     return results
 
 
