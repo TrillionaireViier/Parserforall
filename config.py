@@ -1,6 +1,6 @@
 """
 =============================================================
-  Crypto Ban Monitor — Configuration
+  Crypto & Social Media Scraper — Configuration
   Monitors Twitter/X, Threads, Facebook, Instagram
   for crypto ban/block news in EN, RU, UK
 =============================================================
@@ -44,11 +44,11 @@ ALL_KEYWORDS = list(set(kw for kws in KEYWORDS.values() for kw in kws))
 SCRAPE_PLATFORM = os.environ.get("SCRAPE_PLATFORM", "threads")  # threads, twitter, facebook, instagram, all
 SCRAPE_MODE = os.environ.get("SCRAPE_MODE", "tag")             # tag / hashtag, user / profile, keyword
 SCRAPE_TARGET = os.environ.get("SCRAPE_TARGET", "technology")   # target name, tag, or hashtag
-SCRAPE_LIMIT = int(os.environ.get("SCRAPE_LIMIT", "5"))         # post limit
+SCRAPE_LIMIT = int(os.environ.get("SCRAPE_LIMIT", "999"))        # post limit (default 999)
 
 # ─── TWITTER / X ────────────────────────────────────────────────────────────
 TWITTER_BEARER_TOKEN = os.environ.get("TWITTER_BEARER_TOKEN", "YOUR_TWITTER_BEARER_TOKEN")
-TWITTER_MAX_RESULTS = 50   # 10–100 for Basic tier
+TWITTER_MAX_RESULTS = 100   # 10–100 per API page
 
 # ─── FACEBOOK / INSTAGRAM  ──────────────────────────────────────────────────
 META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "YOUR_META_ACCESS_TOKEN")
@@ -75,8 +75,9 @@ if GOOGLE_SERVICE_ACCOUNT_JSON.strip().startswith("{"):
 # ─── SCHEDULING ──────────────────────────────────────────────────────────────
 POLL_INTERVAL_MINUTES = int(os.environ.get("POLL_INTERVAL_MINUTES", "30"))
 
-# ─── MISC ────────────────────────────────────────────────────────────────────
+# ─── MISC & OUTPUT FILES ─────────────────────────────────────────────────────
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 SEEN_IDS_FILE = "seen_ids.json"
 RESULTS_JSON_FILE = "results.json"
 RESULTS_CSV_FILE = "results.csv"
+RESULTS_TXT_FILE = "results.txt"

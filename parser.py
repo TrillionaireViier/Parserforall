@@ -55,7 +55,7 @@ def save_seen_ids(seen: set) -> None:
 
 
 def save_local_artifacts(rows: list[list]) -> None:
-    """Save results to local JSON & CSV files for GitHub Action Artifacts."""
+    """Save results to local JSON, CSV, and TXT files for GitHub Action Artifacts."""
     if not rows:
         return
 
@@ -90,7 +90,21 @@ def save_local_artifacts(rows: list[list]) -> None:
         for r in rows:
             writer.writerow(r)
 
-    log.info("Saved %d rows to local artifacts (%s, %s)", len(rows), config.RESULTS_JSON_FILE, config.RESULTS_CSV_FILE)
+    # 3. Save / Append to results.txt
+    txt_path = Path(config.RESULTS_TXT_FILE)
+    with open(txt_path, mode="a", encoding="utf-8") as f:
+        for r in rows:
+            f.write("================================================================================\n")
+            f.write(f"Timestamp: {r[0]}\n")
+            f.write(f"Source:    {r[1]}\n")
+            f.write(f"Author:    {r[2]}\n")
+            f.write(f"Language:  {r[3]}\n")
+            f.write(f"URL:       {r[4]}\n")
+            f.write(f"Content:   {r[5]}\n")
+            f.write("================================================================================\n\n")
+
+    log.info("Saved %d rows to local artifacts (%s, %s, %s)", 
+             len(rows), config.RESULTS_JSON_FILE, config.RESULTS_CSV_FILE, config.RESULTS_TXT_FILE)
 
 
 def matches_keywords(text: str) -> bool:
