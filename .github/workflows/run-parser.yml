@@ -1,0 +1,69 @@
+name: Run Parserforall (Social & Crypto Monitor)
+
+on:
+  schedule:
+    # Runs automatically every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      run_mode:
+        description: 'Execution mode (single = run once & stop, continuous = loop)'
+        required: true
+        default: 'single'
+        type: choice
+        options:
+          - single
+          - continuous
+
+permissions:
+  contents: write
+
+jobs:
+  execute-parser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Execute Parser Cycle
+        env:
+          TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+        run: |
+          if [ "${{ github.event.inputs.run_mode }}" = "continuous" ]; then
+            python parser.py
+          else
+            python -c "import parser; parser.run_once()"
+          fi
+
+      - name: Save seen IDs state
+        if: always()
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add seen_ids.json 2>/dev/null || true
+          git commit -m "chore: Update seen_ids.json parser state [skip ci]" 2>/dev/null || true
+          git push origin main 2>/dev/null || true
+
+      - name: Upload Logs & Results Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-results-${{ github.run_id }}
+          path: |
+            parser.log
+            seen_ids.json
+          retention-days: 14

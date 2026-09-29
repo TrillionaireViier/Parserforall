@@ -1,6 +1,28 @@
 # Crypto Ban Monitor — Parserforall
 
-Автоматичний парсер публікацій про **бани/блокування в крипті** у соціальних мережах із виводом у **Google Sheets**.
+Автоматичний парсер публікацій про **бани/блокування в крипті** у соціальних мережах із виводом у **Google Sheets** та **GitHub Actions**.
+
+## ⚡ Запуск через GitHub Actions (Без серверу)
+
+Ви можете запускати парсер автоматично кожні 6 годин або вручну через вкладку **Actions**:
+
+1. Перейдіть до розділу **[Actions](../../actions)** на GitHub.
+2. Оберіть workflow **Run Parserforall (Social & Crypto Monitor)**.
+3. Натисніть **Run workflow** -> **Run workflow**.
+4. Отримайте згенерований `parser.log` та результат у **Artifacts** або в вашій **Google Sheets**!
+
+### 🔑 Налаштування GitHub Secrets (для автоматичного запуску)
+
+Перейдіть у **Settings** -> **Secrets and variables** -> **Actions** -> **New repository secret**:
+
+| Secret Name | Опис |
+|-------------|------|
+| `TWITTER_BEARER_TOKEN` | Bearer Token від Twitter API v2 |
+| `META_ACCESS_TOKEN` | Token від Meta Graph API |
+| `GOOGLE_SHEET_ID` | ID вашої Google Таблиці |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Вміст JSON файлу ключа Service Account |
+
+---
 
 ## Платформи
 
@@ -34,49 +56,11 @@ bash setup.sh
 source venv/bin/activate
 ```
 
-### 3. Заповнити `config.py`
+### 3. Вказати конфігурацію в `config.py`
 
-| Параметр | Де отримати |
-|----------|------------|
-| `TWITTER_BEARER_TOKEN` | [developer.twitter.com](https://developer.twitter.com) → App → Keys & Tokens |
-| `META_ACCESS_TOKEN` | [developers.facebook.com](https://developers.facebook.com) → Graph API Explorer |
-| `GOOGLE_SHEET_ID` | URL таблиці: `/spreadsheets/d/<ID>/edit` |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | [console.cloud.google.com](https://console.cloud.google.com) → Service Accounts → Create Key → JSON |
-
-### 4. Налаштувати Google Sheets
-
-1. Відкрити [Google Cloud Console](https://console.cloud.google.com)
-2. Увімкнути **Google Sheets API** та **Google Drive API**
-3. Створити **Service Account** → завантажити JSON ключ → покласти у папку проєкту
-4. Відкрити Google Sheets → Поділитись із email сервісного акаунту (права редактора)
-5. Вказати `GOOGLE_SHEET_ID` і шлях до JSON у `config.py`
-
-### 5. Запустити
-
+### 4. Запустити локально
 ```bash
-# Одноразово:
 python parser.py
-
-# Або як демон (кожні 30 хв):
-python parser.py  # зупиняється через Ctrl+C
-```
-
-## Структура Google Sheets
-
-| Timestamp | Source | Author | Language | URL | Text |
-|-----------|--------|--------|----------|-----|------|
-| 2026-06-23 10:00 UTC | Twitter/X | @coindesk | EN | https://x.com/… | Binance banned in… |
-| 2026-06-23 10:01 UTC | Facebook | CoinDesk | RU | https://fb.com/… | Бинанс заблокировали… |
-
-## Запуск як системний сервіс (Linux / VPS)
-
-```bash
-sudo cp crypto-ban-monitor.service /etc/systemd/system/
-# Відредагуйте шляхи у файлі .service
-sudo systemctl daemon-reload
-sudo systemctl enable crypto-ban-monitor
-sudo systemctl start crypto-ban-monitor
-sudo systemctl status crypto-ban-monitor
 ```
 
 ## Ліцензія
