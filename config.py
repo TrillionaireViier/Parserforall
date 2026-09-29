@@ -6,6 +6,9 @@
 =============================================================
 """
 
+import os
+from pathlib import Path
+
 # ─── KEYWORDS ────────────────────────────────────────────────────────────────
 KEYWORDS = {
     "en": [
@@ -38,38 +41,36 @@ KEYWORDS = {
 ALL_KEYWORDS = list(set(kw for kws in KEYWORDS.values() for kw in kws))
 
 # ─── TWITTER / X ────────────────────────────────────────────────────────────
-TWITTER_BEARER_TOKEN = "YOUR_TWITTER_BEARER_TOKEN"   # https://developer.twitter.com
+TWITTER_BEARER_TOKEN = os.environ.get("TWITTER_BEARER_TOKEN", "YOUR_TWITTER_BEARER_TOKEN")
 TWITTER_MAX_RESULTS = 50   # 10–100 for Basic tier
 
 # ─── FACEBOOK / INSTAGRAM  ──────────────────────────────────────────────────
-# Meta Graph API (Page token with pages_read_engagement permission)
-META_ACCESS_TOKEN = "YOUR_META_ACCESS_TOKEN"
-# List of FB Page IDs or usernames to monitor
+META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "YOUR_META_ACCESS_TOKEN")
 FACEBOOK_PAGES = [
     "CoinDesk", "CoinTelegraph", "decrypt.co", "TheBlock",
 ]
-# List of IG Business Account IDs to monitor (must be linked to a FB page)
-INSTAGRAM_ACCOUNTS = [
-    # "17841400000000000",  # example IG Business ID
-]
+INSTAGRAM_ACCOUNTS = []
 
 # ─── THREADS ────────────────────────────────────────────────────────────────
-# Threads has no public API yet; we scrape via ntscraper / snscrape workaround
 THREADS_SEARCH_ENABLED = True   # set False to skip if blocked
 
 # ─── GOOGLE SHEETS ──────────────────────────────────────────────────────────
-# 1. Create a Google Cloud project
-# 2. Enable Sheets API + Drive API
-# 3. Create a Service Account → download JSON key → put path here
-GOOGLE_SERVICE_ACCOUNT_JSON = "google_service_account.json"
-# ID of the target spreadsheet (from the URL: /spreadsheets/d/<ID>/edit)
-GOOGLE_SHEET_ID = "YOUR_GOOGLE_SHEET_ID"
-# Name of the worksheet tab
+# Accepts either file path OR raw JSON secret string
+GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "google_service_account.json")
+GOOGLE_SHEET_ID = os.environ.get("GOOGLE_SHEET_ID", "YOUR_GOOGLE_SHEET_ID")
 GOOGLE_SHEET_TAB = "Crypto Bans"
 
+# Auto-handle raw JSON string passed in environment variables
+if GOOGLE_SERVICE_ACCOUNT_JSON.strip().startswith("{"):
+    credentials_path = Path("service_account_credentials.json")
+    credentials_path.write_text(GOOGLE_SERVICE_ACCOUNT_JSON, encoding="utf-8")
+    GOOGLE_SERVICE_ACCOUNT_JSON = str(credentials_path)
+
 # ─── SCHEDULING ──────────────────────────────────────────────────────────────
-POLL_INTERVAL_MINUTES = 30   # run parser every N minutes
+POLL_INTERVAL_MINUTES = int(os.environ.get("POLL_INTERVAL_MINUTES", "30"))
 
 # ─── MISC ────────────────────────────────────────────────────────────────────
-LOG_LEVEL = "INFO"           # DEBUG | INFO | WARNING | ERROR
-SEEN_IDS_FILE = "seen_ids.json"   # cache file to avoid duplicates
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+SEEN_IDS_FILE = "seen_ids.json"
+RESULTS_JSON_FILE = "results.json"
+RESULTS_CSV_FILE = "results.csv"

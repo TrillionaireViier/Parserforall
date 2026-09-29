@@ -2,20 +2,20 @@
 =============================================================
   Crypto Ban Monitor — Main Parser
   Sources: Twitter/X · Threads · Facebook · Instagram
-  Output:  Google Sheets
+  Output:  Google Sheets & Local JSON/CSV Artifacts
 =============================================================
 """
 
+import csv
 import json
 import logging
-import time
+import os
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
-import gspread
-from google.oauth2.service_account import Credentials
 
 import config
 
@@ -37,7 +37,10 @@ def load_seen_ids() -> set:
     """Load already-processed post IDs from disk."""
     p = Path(config.SEEN_IDS_FILE)
     if p.exists():
-        return set(json.loads(p.read_text(encoding="utf-8")))
+        try:
+            return set(json.loads(p.read_text(encoding="utf-8")))
+        except Exception as e:
+            log.warning("Failed to load seen_ids.json: %s", e)
     return set()
 
 
@@ -46,6 +49,45 @@ def save_seen_ids(seen: set) -> None:
     Path(config.SEEN_IDS_FILE).write_text(
         json.dumps(list(seen)), encoding="utf-8"
     )
+
+
+def save_local_artifacts(rows: list[list]) -> None:
+    """Save results to local JSON & CSV files for GitHub Action Artifacts."""
+    if not rows:
+        return
+
+    # 1. Save / Append to results.json
+    existing_data = []
+    json_path = Path(config.RESULTS_JSON_FILE)
+    if json_path.exists():
+        try:
+            existing_data = json.loads(json_path.read_text(encoding="utf-8"))
+        except Exception:
+            existing_data = []
+
+    for r in rows:
+        existing_data.append({
+            "timestamp": r[0],
+            "source": r[1],
+            "author": r[2],
+            "language": r[3],
+            "url": r[4],
+            "text": r[5]
+        })
+
+    json_path.write_text(json.dumps(existing_data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    # 2. Save / Append to results.csv
+    csv_path = Path(config.RESULTS_CSV_FILE)
+    file_exists = csv_path.exists()
+    with open(csv_path, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(["Timestamp", "Source", "Author", "Language", "URL", "Text"])
+        for r in rows:
+            writer.writerow(r)
+
+    log.info("Saved %d rows to local artifacts (%s, %s)", len(rows), config.RESULTS_JSON_FILE, config.RESULTS_CSV_FILE)
 
 
 def matches_keywords(text: str) -> bool:
@@ -70,43 +112,57 @@ def now_utc() -> str:
 # ─── GOOGLE SHEETS ───────────────────────────────────────────────────────────
 
 def get_sheet():
-    """Authenticate and return the target worksheet."""
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-    creds = Credentials.from_service_account_file(
-        config.GOOGLE_SERVICE_ACCOUNT_JSON, scopes=scopes
-    )
-    client = gspread.authorize(creds)
-    sh = client.open_by_key(config.GOOGLE_SHEET_ID)
+    """Authenticate and return the target worksheet if configured."""
+    if not config.GOOGLE_SHEET_ID or config.GOOGLE_SHEET_ID.startswith("YOUR"):
+        log.warning("Google Sheets: GOOGLE_SHEET_ID not set, skipping Sheets export.")
+        return None
+
+    if not Path(config.GOOGLE_SERVICE_ACCOUNT_JSON).exists():
+        log.warning("Google Sheets: Service account file '%s' not found, skipping Sheets export.", config.GOOGLE_SERVICE_ACCOUNT_JSON)
+        return None
+
     try:
-        ws = sh.worksheet(config.GOOGLE_SHEET_TAB)
-    except gspread.exceptions.WorksheetNotFound:
-        ws = sh.add_worksheet(title=config.GOOGLE_SHEET_TAB, rows=10000, cols=10)
-        # Write header row
-        ws.append_row(
-            ["Timestamp", "Source", "Author", "Language", "URL", "Text"],
-            value_input_option="RAW",
+        import gspread
+        from google.oauth2.service_account import Credentials
+
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ]
+        creds = Credentials.from_service_account_file(
+            config.GOOGLE_SERVICE_ACCOUNT_JSON, scopes=scopes
         )
-    return ws
+        client = gspread.authorize(creds)
+        sh = client.open_by_key(config.GOOGLE_SHEET_ID)
+        try:
+            ws = sh.worksheet(config.GOOGLE_SHEET_TAB)
+        except Exception:
+            ws = sh.add_worksheet(title=config.GOOGLE_SHEET_TAB, rows=10000, cols=10)
+            ws.append_row(
+                ["Timestamp", "Source", "Author", "Language", "URL", "Text"],
+                value_input_option="RAW",
+            )
+        return ws
+    except Exception as e:
+        log.error("Google Sheets authentication error: %s", e)
+        return None
 
 
 def append_rows_to_sheet(ws, rows: list[list]) -> None:
     """Append multiple rows to worksheet at once."""
-    if not rows:
+    if not ws or not rows:
         return
-    ws.append_rows(rows, value_input_option="RAW")
-    log.info("Appended %d rows to Google Sheets.", len(rows))
+    try:
+        ws.append_rows(rows, value_input_option="RAW")
+        log.info("Appended %d rows to Google Sheets.", len(rows))
+    except Exception as e:
+        log.error("Error appending to Google Sheets: %s", e)
 
 
 # ─── TWITTER / X ─────────────────────────────────────────────────────────────
 
 def fetch_twitter(seen: set) -> list[list]:
-    """
-    Search recent tweets via Twitter API v2 (Bearer Token auth).
-    Returns list of rows ready for Sheets.
-    """
+    """Search recent tweets via Twitter API v2 (Bearer Token auth)."""
     if not config.TWITTER_BEARER_TOKEN or config.TWITTER_BEARER_TOKEN.startswith("YOUR"):
         log.warning("Twitter: No bearer token configured, skipping.")
         return []
@@ -115,8 +171,6 @@ def fetch_twitter(seen: set) -> list[list]:
     headers = {"Authorization": f"Bearer {config.TWITTER_BEARER_TOKEN}"}
     base_url = "https://api.twitter.com/2/tweets/search/recent"
 
-    # Build OR query from keyword list (max 512 chars for Basic tier)
-    # We chunk keywords to stay under the limit
     all_kws = config.ALL_KEYWORDS
     chunk_size = 15
     for i in range(0, len(all_kws), chunk_size):
@@ -162,44 +216,31 @@ def fetch_twitter(seen: set) -> list[list]:
 # ─── THREADS ─────────────────────────────────────────────────────────────────
 
 def fetch_threads(seen: set) -> list[list]:
-    """
-    Search Threads via unofficial scraping (no public API yet).
-    Uses the 'nodriver' approach via ntscraper if available,
-    otherwise falls back to a Threads search URL scrape.
-    """
+    """Search Threads via web scraping parser."""
     if not config.THREADS_SEARCH_ENABLED:
         return []
 
     results = []
-    try:
-        from ntscraper import Nitter  # type: ignore
-        # ntscraper can sometimes scrape Threads via Nitter instances
-        # but primary use is Twitter fallback; we use requests here instead
-    except ImportError:
-        pass
-
-    # Threads v1 API (internal, may break)
     headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; CryptoBanMonitor/1.0)",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "X-IG-App-ID": "238260118697367",
+        "Accept-Language": "en-US,en;q=0.9",
     }
 
-    for kw in config.ALL_KEYWORDS[:10]:   # limit to avoid rate limits
+    for kw in config.ALL_KEYWORDS[:12]:
         try:
             url = f"https://www.threads.net/search?q={requests.utils.quote(kw)}&serp_type=default"
             resp = requests.get(url, headers=headers, timeout=10)
-            # Parse post IDs from page HTML (Threads embeds JSON-LD)
+            
             matches = re.findall(r'"identifier":"(\d+)"', resp.text)
-            texts = re.findall(r'"text":"([^"]{20,500})"', resp.text)
-            users = re.findall(r'"alternateName":"([^"]+)"', resp.text)
+            texts = re.findall(r'"text":"([^"]{15,500})"', resp.text)
+            users = re.findall(r'"username":"([^"]+)"', resp.text)
 
             for j, mid in enumerate(matches):
                 if mid in seen:
                     continue
                 text = texts[j] if j < len(texts) else kw
-                if not matches_keywords(text):
-                    continue
-                user = users[j] if j < len(users) else "unknown"
+                user = users[j] if j < len(users) else "user"
                 post_url = f"https://www.threads.net/@{user}/post/{mid}"
                 lang = detect_language(text)
                 seen.add(mid)
@@ -214,10 +255,7 @@ def fetch_threads(seen: set) -> list[list]:
 # ─── FACEBOOK ────────────────────────────────────────────────────────────────
 
 def fetch_facebook(seen: set) -> list[list]:
-    """
-    Fetch recent posts from configured Facebook Pages via Graph API.
-    Requires a Page Access Token with pages_read_engagement permission.
-    """
+    """Fetch recent posts from Facebook Pages via Graph API."""
     if not config.META_ACCESS_TOKEN or config.META_ACCESS_TOKEN.startswith("YOUR"):
         log.warning("Facebook: No access token configured, skipping.")
         return []
@@ -228,7 +266,6 @@ def fetch_facebook(seen: set) -> list[list]:
 
     for page in config.FACEBOOK_PAGES:
         try:
-            # Get page posts
             resp = requests.get(
                 f"{base}/{page}/posts",
                 params={
@@ -263,10 +300,7 @@ def fetch_facebook(seen: set) -> list[list]:
 # ─── INSTAGRAM ───────────────────────────────────────────────────────────────
 
 def fetch_instagram(seen: set) -> list[list]:
-    """
-    Fetch recent Instagram Business media via Graph API.
-    Requires the same Meta token with instagram_basic permission.
-    """
+    """Fetch recent Instagram Business media via Graph API."""
     if not config.META_ACCESS_TOKEN or config.META_ACCESS_TOKEN.startswith("YOUR"):
         log.warning("Instagram: No access token configured, skipping.")
         return []
@@ -329,7 +363,9 @@ def run_once():
     all_rows += fetch_instagram(seen)
 
     if all_rows:
-        append_rows_to_sheet(ws, all_rows)
+        save_local_artifacts(all_rows)
+        if ws:
+            append_rows_to_sheet(ws, all_rows)
     else:
         log.info("No new matching posts found this cycle.")
 
