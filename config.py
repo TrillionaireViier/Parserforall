@@ -40,6 +40,12 @@ KEYWORDS = {
 # Flatten to one list (used by scrapers)
 ALL_KEYWORDS = list(set(kw for kws in KEYWORDS.values() for kw in kws))
 
+# ─── DYNAMIC TARGET SCRAPE PARAMETERS ──────────────────────────────────────
+SCRAPE_PLATFORM = os.environ.get("SCRAPE_PLATFORM", "threads")  # threads, twitter, facebook, instagram, all
+SCRAPE_MODE = os.environ.get("SCRAPE_MODE", "tag")             # tag / hashtag, user / profile, keyword
+SCRAPE_TARGET = os.environ.get("SCRAPE_TARGET", "technology")   # target name, tag, or hashtag
+SCRAPE_LIMIT = int(os.environ.get("SCRAPE_LIMIT", "5"))         # post limit
+
 # ─── TWITTER / X ────────────────────────────────────────────────────────────
 TWITTER_BEARER_TOKEN = os.environ.get("TWITTER_BEARER_TOKEN", "YOUR_TWITTER_BEARER_TOKEN")
 TWITTER_MAX_RESULTS = 50   # 10–100 for Basic tier

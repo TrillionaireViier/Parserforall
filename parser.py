@@ -1,16 +1,19 @@
 """
 =============================================================
-  Crypto Ban Monitor — Main Parser
-  Sources: Twitter/X · Threads · Facebook · Instagram
+  Crypto & Social Media Scraper — Main Parserforall
+  Platform Support: Threads.net · Twitter/X · Facebook · Instagram
+  Modes: Tag/Hashtag · Profile/User · Keyword Search
   Output:  Google Sheets & Local JSON/CSV Artifacts
 =============================================================
 """
 
+import argparse
 import csv
 import json
 import logging
 import os
 import re
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,7 +31,7 @@ logging.basicConfig(
         logging.FileHandler("parser.log", encoding="utf-8"),
     ],
 )
-log = logging.getLogger("crypto-ban-monitor")
+log = logging.getLogger("parserforall")
 
 
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -91,7 +94,7 @@ def save_local_artifacts(rows: list[list]) -> None:
 
 
 def matches_keywords(text: str) -> bool:
-    """Return True if text contains any monitored keyword (case-insensitive)."""
+    """Return True if text contains any monitored keyword or target (case-insensitive)."""
     low = text.lower()
     return any(kw.lower() in low for kw in config.ALL_KEYWORDS)
 
@@ -102,7 +105,7 @@ def detect_language(text: str) -> str:
     for lang, kws in config.KEYWORDS.items():
         if any(kw.lower() in low for kw in kws):
             return lang.upper()
-    return "UNK"
+    return "EN"
 
 
 def now_utc() -> str:
@@ -159,10 +162,118 @@ def append_rows_to_sheet(ws, rows: list[list]) -> None:
         log.error("Error appending to Google Sheets: %s", e)
 
 
+# ─── THREADS.NET SCRAPER ──────────────────────────────────────────────────────
+
+def fetch_threads(seen: set, mode: str = "tag", target: str = "technology", limit: int = 5) -> list[list]:
+    """
+    Scrape Threads.net by Tag/Hashtag, User/Profile, or Keyword Search up to limit.
+    """
+    if not config.THREADS_SEARCH_ENABLED:
+        return []
+
+    results = []
+    clean_target = target.strip().lstrip('#').lstrip('@')
+    
+    # Construct target URL based on mode
+    if mode.lower() in ["tag", "hashtag"]:
+        urls = [
+            f"https://www.threads.net/tag/{requests.utils.quote(clean_target)}",
+            f"https://www.threads.net/search?q=%23{requests.utils.quote(clean_target)}&serp_type=default"
+        ]
+        search_desc = f"Hashtag #{clean_target}"
+    elif mode.lower() in ["user", "profile"]:
+        urls = [f"https://www.threads.net/@{requests.utils.quote(clean_target)}"]
+        search_desc = f"Profile @{clean_target}"
+    else: # keyword
+        urls = [f"https://www.threads.net/search?q={requests.utils.quote(clean_target)}&serp_type=default"]
+        search_desc = f"Keyword '{clean_target}'"
+
+    log.info("Threads: Starting scrape for %s (Limit: %d)...", search_desc, limit)
+
+    # 1. Try Playwright Headless Browser (best for GitHub Actions)
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+            context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+            page = context.new_page()
+
+            for target_url in urls:
+                if len(results) >= limit:
+                    break
+                try:
+                    page.goto(target_url, wait_until="domcontentloaded", timeout=15000)
+                    time.sleep(2)
+                    
+                    # Scroll down to load content
+                    for _ in range(3):
+                        page.evaluate("window.scrollBy(0, 800)")
+                        time.sleep(1)
+
+                    content = page.content()
+                    
+                    matches = re.findall(r'"identifier":"(\d+)"', content)
+                    texts = re.findall(r'"text":"([^"]{10,600})"', content)
+                    users = re.findall(r'"username":"([^"]+)"', content)
+
+                    for j, mid in enumerate(matches):
+                        if len(results) >= limit:
+                            break
+                        if mid in seen:
+                            continue
+                        text = texts[j] if j < len(texts) else f"Threads post on #{clean_target}"
+                        user = users[j] if j < len(users) else (clean_target if mode in ["user", "profile"] else "threads_user")
+                        post_url = f"https://www.threads.net/@{user}/post/{mid}"
+                        lang = detect_language(text)
+                        seen.add(mid)
+                        results.append([now_utc(), "Threads", f"@{user}", lang, post_url, text.replace("\n", " ")])
+                except Exception as e:
+                    log.debug("Threads Playwright error for %s: %s", target_url, e)
+
+            browser.close()
+            log.info("Threads (Playwright): scraped %d matching posts for %s.", len(results), search_desc)
+            return results
+    except Exception as e:
+        log.warning("Playwright not available (%s), using HTTP request fallback.", e)
+
+    # 2. HTTP Fallback
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "X-IG-App-ID": "238260118697367",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    for target_url in urls:
+        if len(results) >= limit:
+            break
+        try:
+            resp = requests.get(target_url, headers=headers, timeout=12)
+            matches = re.findall(r'"identifier":"(\d+)"', resp.text)
+            texts = re.findall(r'"text":"([^"]{10,600})"', resp.text)
+            users = re.findall(r'"username":"([^"]+)"', resp.text)
+
+            for j, mid in enumerate(matches):
+                if len(results) >= limit:
+                    break
+                if mid in seen:
+                    continue
+                text = texts[j] if j < len(texts) else f"Threads post on #{clean_target}"
+                user = users[j] if j < len(users) else (clean_target if mode in ["user", "profile"] else "threads_user")
+                post_url = f"https://www.threads.net/@{user}/post/{mid}"
+                lang = detect_language(text)
+                seen.add(mid)
+                results.append([now_utc(), "Threads", f"@{user}", lang, post_url, text.replace("\n", " ")])
+        except Exception as e:
+            log.debug("Threads HTTP error for %s: %s", target_url, e)
+
+    log.info("Threads (HTTP): scraped %d matching posts.", len(results))
+    return results
+
+
 # ─── TWITTER / X ─────────────────────────────────────────────────────────────
 
-def fetch_twitter(seen: set) -> list[list]:
-    """Search recent tweets via Twitter API v2 (Bearer Token auth)."""
+def fetch_twitter(seen: set, target: str = "technology", limit: int = 5) -> list[list]:
+    """Search recent tweets via Twitter API v2."""
     if not config.TWITTER_BEARER_TOKEN or config.TWITTER_BEARER_TOKEN.startswith("YOUR"):
         log.warning("Twitter: No bearer token configured, skipping.")
         return []
@@ -171,126 +282,43 @@ def fetch_twitter(seen: set) -> list[list]:
     headers = {"Authorization": f"Bearer {config.TWITTER_BEARER_TOKEN}"}
     base_url = "https://api.twitter.com/2/tweets/search/recent"
 
-    all_kws = config.ALL_KEYWORDS
-    chunk_size = 15
-    for i in range(0, len(all_kws), chunk_size):
-        chunk = all_kws[i : i + chunk_size]
-        query = " OR ".join(f'"{kw}"' for kw in chunk)
-        query = f"({query}) -is:retweet lang:en OR lang:ru OR lang:uk"
-
-        params = {
-            "query": query[:512],
-            "max_results": config.TWITTER_MAX_RESULTS,
-            "tweet.fields": "created_at,author_id,text",
-            "expansions": "author_id",
-            "user.fields": "username",
-        }
-        try:
-            resp = requests.get(base_url, headers=headers, params=params, timeout=15)
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            log.error("Twitter API error: %s", e)
-            continue
-
+    query = f'"{target}" -is:retweet'
+    params = {
+        "query": query[:512],
+        "max_results": min(100, max(10, limit)),
+        "tweet.fields": "created_at,author_id,text",
+        "expansions": "author_id",
+        "user.fields": "username",
+    }
+    try:
+        resp = requests.get(base_url, headers=headers, params=params, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
         tweets = data.get("data", [])
         users = {u["id"]: u["username"] for u in data.get("includes", {}).get("users", [])}
 
         for tw in tweets:
+            if len(results) >= limit:
+                break
             tid = tw["id"]
             if tid in seen:
                 continue
             text = tw.get("text", "")
-            if not matches_keywords(text):
-                continue
             author = users.get(tw.get("author_id", ""), "unknown")
             url = f"https://x.com/{author}/status/{tid}"
             lang = detect_language(text)
             seen.add(tid)
             results.append([now_utc(), "Twitter/X", f"@{author}", lang, url, text.replace("\n", " ")])
+    except Exception as e:
+        log.error("Twitter API error: %s", e)
 
     log.info("Twitter: found %d new matching tweets.", len(results))
     return results
 
 
-# ─── THREADS ─────────────────────────────────────────────────────────────────
-
-def fetch_threads(seen: set) -> list[list]:
-    """Search Threads via Playwright headless browser (or HTTP fallback)."""
-    if not config.THREADS_SEARCH_ENABLED:
-        return []
-
-    results = []
-
-    # Try Playwright Headless Browser first (best for GitHub Actions)
-    try:
-        from playwright.sync_api import sync_playwright
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
-            page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
-            
-            for kw in config.ALL_KEYWORDS[:8]:
-                try:
-                    url = f"https://www.threads.net/search?q={requests.utils.quote(kw)}&serp_type=default"
-                    page.goto(url, wait_until="domcontentloaded", timeout=12000)
-                    time.sleep(2)
-                    content = page.content()
-                    
-                    matches = re.findall(r'"identifier":"(\d+)"', content)
-                    texts = re.findall(r'"text":"([^"]{15,500})"', content)
-                    users = re.findall(r'"username":"([^"]+)"', content)
-
-                    for j, mid in enumerate(matches):
-                        if mid in seen:
-                            continue
-                        text = texts[j] if j < len(texts) else kw
-                        user = users[j] if j < len(users) else "user"
-                        post_url = f"https://www.threads.net/@{user}/post/{mid}"
-                        lang = detect_language(text)
-                        seen.add(mid)
-                        results.append([now_utc(), "Threads", f"@{user}", lang, post_url, text.replace("\n", " ")])
-                except Exception as e:
-                    log.debug("Threads Playwright page error for '%s': %s", kw, e)
-            browser.close()
-            log.info("Threads (Playwright): found %d new matching posts.", len(results))
-            return results
-    except Exception as e:
-        log.warning("Playwright not available or failed (%s), using HTTP request fallback.", e)
-
-    # HTTP Fallback
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "X-IG-App-ID": "238260118697367",
-        "Accept-Language": "en-US,en;q=0.9",
-    }
-
-    for kw in config.ALL_KEYWORDS[:12]:
-        try:
-            url = f"https://www.threads.net/search?q={requests.utils.quote(kw)}&serp_type=default"
-            resp = requests.get(url, headers=headers, timeout=10)
-            matches = re.findall(r'"identifier":"(\d+)"', resp.text)
-            texts = re.findall(r'"text":"([^"]{15,500})"', resp.text)
-            users = re.findall(r'"username":"([^"]+)"', resp.text)
-
-            for j, mid in enumerate(matches):
-                if mid in seen:
-                    continue
-                text = texts[j] if j < len(texts) else kw
-                user = users[j] if j < len(users) else "user"
-                post_url = f"https://www.threads.net/@{user}/post/{mid}"
-                lang = detect_language(text)
-                seen.add(mid)
-                results.append([now_utc(), "Threads", f"@{user}", lang, post_url, text.replace("\n", " ")])
-        except Exception as e:
-            log.debug("Threads HTTP scrape error for '%s': %s", kw, e)
-
-    log.info("Threads (HTTP): found %d new matching posts.", len(results))
-    return results
-
-
 # ─── FACEBOOK ────────────────────────────────────────────────────────────────
 
-def fetch_facebook(seen: set) -> list[list]:
+def fetch_facebook(seen: set, target: str = "CoinDesk", limit: int = 5) -> list[list]:
     """Fetch recent posts from Facebook Pages via Graph API."""
     if not config.META_ACCESS_TOKEN or config.META_ACCESS_TOKEN.startswith("YOUR"):
         log.warning("Facebook: No access token configured, skipping.")
@@ -299,15 +327,18 @@ def fetch_facebook(seen: set) -> list[list]:
     results = []
     base = "https://graph.facebook.com/v19.0"
     token = config.META_ACCESS_TOKEN
+    pages = [target] if target else config.FACEBOOK_PAGES
 
-    for page in config.FACEBOOK_PAGES:
+    for page in pages:
+        if len(results) >= limit:
+            break
         try:
             resp = requests.get(
                 f"{base}/{page}/posts",
                 params={
                     "access_token": token,
                     "fields": "id,message,created_time,permalink_url",
-                    "limit": 25,
+                    "limit": limit,
                 },
                 timeout=15,
             )
@@ -318,11 +349,13 @@ def fetch_facebook(seen: set) -> list[list]:
             continue
 
         for post in posts:
+            if len(results) >= limit:
+                break
             pid = post.get("id", "")
             if pid in seen:
                 continue
             text = post.get("message", "")
-            if not text or not matches_keywords(text):
+            if not text:
                 continue
             url = post.get("permalink_url", f"https://www.facebook.com/{pid}")
             lang = detect_language(text)
@@ -335,13 +368,14 @@ def fetch_facebook(seen: set) -> list[list]:
 
 # ─── INSTAGRAM ───────────────────────────────────────────────────────────────
 
-def fetch_instagram(seen: set) -> list[list]:
+def fetch_instagram(seen: set, target: str = "", limit: int = 5) -> list[list]:
     """Fetch recent Instagram Business media via Graph API."""
     if not config.META_ACCESS_TOKEN or config.META_ACCESS_TOKEN.startswith("YOUR"):
         log.warning("Instagram: No access token configured, skipping.")
         return []
 
-    if not config.INSTAGRAM_ACCOUNTS:
+    accounts = [target] if target else config.INSTAGRAM_ACCOUNTS
+    if not accounts or not accounts[0]:
         log.info("Instagram: No account IDs configured, skipping.")
         return []
 
@@ -349,14 +383,16 @@ def fetch_instagram(seen: set) -> list[list]:
     base = "https://graph.facebook.com/v19.0"
     token = config.META_ACCESS_TOKEN
 
-    for ig_id in config.INSTAGRAM_ACCOUNTS:
+    for ig_id in accounts:
+        if len(results) >= limit:
+            break
         try:
             resp = requests.get(
                 f"{base}/{ig_id}/media",
                 params={
                     "access_token": token,
                     "fields": "id,caption,permalink,timestamp,username",
-                    "limit": 20,
+                    "limit": limit,
                 },
                 timeout=15,
             )
@@ -367,12 +403,12 @@ def fetch_instagram(seen: set) -> list[list]:
             continue
 
         for item in media:
+            if len(results) >= limit:
+                break
             mid = item.get("id", "")
             if mid in seen:
                 continue
             text = item.get("caption", "")
-            if not text or not matches_keywords(text):
-                continue
             url = item.get("permalink", "")
             user = item.get("username", ig_id)
             lang = detect_language(text)
@@ -383,20 +419,33 @@ def fetch_instagram(seen: set) -> list[list]:
     return results
 
 
-# ─── MAIN LOOP ───────────────────────────────────────────────────────────────
+# ─── MAIN COLLECTION CYCLE ───────────────────────────────────────────────────
 
-def run_once():
-    """Run one full collection cycle across all platforms."""
-    log.info("═══ Starting collection cycle ═══")
+def run_once(platform: str = None, mode: str = None, target: str = None, limit: int = None):
+    """Run one collection cycle with dynamic parameters."""
+    target_platform = (platform or config.SCRAPE_PLATFORM or "threads").lower()
+    target_mode = (mode or config.SCRAPE_MODE or "tag").lower()
+    target_name = target or config.SCRAPE_TARGET or "technology"
+    target_limit = limit or config.SCRAPE_LIMIT or 5
+
+    log.info("═══ Starting Scraper Cycle [Platform: %s | Mode: %s | Target: %s | Limit: %d] ═══", 
+             target_platform, target_mode, target_name, target_limit)
+
     seen = load_seen_ids()
-
     ws = get_sheet()
-
     all_rows: list[list] = []
-    all_rows += fetch_twitter(seen)
-    all_rows += fetch_threads(seen)
-    all_rows += fetch_facebook(seen)
-    all_rows += fetch_instagram(seen)
+
+    if target_platform in ["threads", "threads.net", "all"]:
+        all_rows += fetch_threads(seen, mode=target_mode, target=target_name, limit=target_limit)
+
+    if target_platform in ["twitter", "x", "all"]:
+        all_rows += fetch_twitter(seen, target=target_name, limit=target_limit)
+
+    if target_platform in ["facebook", "fb", "all"]:
+        all_rows += fetch_facebook(seen, target=target_name, limit=target_limit)
+
+    if target_platform in ["instagram", "ig", "all"]:
+        all_rows += fetch_instagram(seen, target=target_name, limit=target_limit)
 
     if all_rows:
         save_local_artifacts(all_rows)
@@ -406,18 +455,31 @@ def run_once():
         log.info("No new matching posts found this cycle.")
 
     save_seen_ids(seen)
-    log.info("═══ Cycle complete. Total new rows: %d ═══", len(all_rows))
+    log.info("═══ Cycle complete. Total parsed rows: %d ═══", len(all_rows))
+    return all_rows
 
 
 def main():
-    log.info("Crypto Ban Monitor started. Interval: %d min", config.POLL_INTERVAL_MINUTES)
-    while True:
-        try:
-            run_once()
-        except Exception as e:
-            log.error("Unhandled error in cycle: %s", e, exc_info=True)
-        log.info("Sleeping %d minutes …", config.POLL_INTERVAL_MINUTES)
-        time.sleep(config.POLL_INTERVAL_MINUTES * 60)
+    parser = argparse.ArgumentParser(description="Parserforall — Social & Crypto Media Scraper")
+    parser.add_argument("--platform", default=config.SCRAPE_PLATFORM, help="threads, twitter, facebook, instagram, all")
+    parser.add_argument("--mode", default=config.SCRAPE_MODE, help="tag, user, keyword")
+    parser.add_argument("--target", default=config.SCRAPE_TARGET, help="Target hashtag, username, or search keyword (e.g. technology)")
+    parser.add_argument("--limit", type=int, default=config.SCRAPE_LIMIT, help="Max posts to parse (e.g. 5)")
+    parser.add_argument("--loop", action="store_true", help="Run continuously on interval")
+
+    args = parser.parse_args()
+
+    if args.loop:
+        log.info("Continuous mode started. Interval: %d min", config.POLL_INTERVAL_MINUTES)
+        while True:
+            try:
+                run_once(platform=args.platform, mode=args.mode, target=args.target, limit=args.limit)
+            except Exception as e:
+                log.error("Unhandled error in cycle: %s", e, exc_info=True)
+            log.info("Sleeping %d minutes …", config.POLL_INTERVAL_MINUTES)
+            time.sleep(config.POLL_INTERVAL_MINUTES * 60)
+    else:
+        run_once(platform=args.platform, mode=args.mode, target=args.target, limit=args.limit)
 
 
 if __name__ == "__main__":
