@@ -56,6 +56,24 @@ KEYWORDS = {
     ]
 }
 
+# ─── CLIENT INTENT PATTERNS (People looking to order/build websites or apps) ──
+INTENT_PATTERNS = [
+    # Ukrainian
+    r"створюю\s+зараз\s+сайт", r"сайт\s+заказала", r"треба\s+зробити\s+сайт",
+    r"потрібен\s+сайт", r"хто\s+зробить\s+сайт", r"шукаю\s+хто\s+зробить", r"хочу\s+сайт",
+    # English
+    r"want\s+to\s+build\s+a\s+website", r"need\s+a\s+website\s+made", r"looking\s+to\s+order\s+a\s+website",
+    r"hiring\s+someone\s+to\s+build", r"need\s+a\s+developer\s+to\s+build",
+    # German
+    r"brauche\s+eine\s+website", r"website\s+erstellen\s+lassen", r"wer\s+kann\s+mir\s+eine\s+website",
+    # French
+    r"besoin\s+d'un\s+site", r"cherche\s+quelqu'un\s+pour\s+créer\s+un\s+site",
+    # Spanish
+    r"necesito\s+una\s+página\s+web", r"busco\s+quién\s+me\s+haga\s+una\s+web",
+    # Russian
+    r"нужно\s+сделать\s+сайт", r"заказать\s+сайт", r"ищу\s+кто\s+сделает\s+сайт"
+]
+
 # Flatten to full target search list
 ALL_TARGET_CATEGORIES = ["freelance", "marketing", "webdev", "businessplan"]
 ALL_KEYWORDS = list(set(kw for kws in KEYWORDS.values() for kw in kws))

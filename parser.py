@@ -72,6 +72,17 @@ def save_seen_ids(seen: set) -> None:
     )
 
 
+def classify_client_intent(text: str) -> str:
+    """Classify if the post shows strong client intent to order a website or service."""
+    if not text:
+        return "GENERAL_LEAD"
+    low = text.lower()
+    for pattern in getattr(config, "INTENT_PATTERNS", []):
+        if re.search(pattern, low):
+            return "HIGH_CLIENT_INTENT"
+    return "GENERAL_LEAD"
+
+
 def save_local_artifacts(rows: list[list]) -> None:
     """Save results to local JSON, CSV, and TXT files for GitHub Action Artifacts."""
     if not rows:
@@ -88,12 +99,14 @@ def save_local_artifacts(rows: list[list]) -> None:
 
     for r in rows:
         cleaned_text = clean_unescape_text(r[5])
+        intent = classify_client_intent(cleaned_text)
         existing_data.append({
             "timestamp": r[0],
             "source": r[1],
             "author": r[2],
             "language": r[3],
             "url": r[4],
+            "intent": intent,
             "text": cleaned_text
         })
 
