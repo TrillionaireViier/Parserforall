@@ -204,11 +204,27 @@ def fetch_threads(seen: set, mode: str = "tag", target: str = "technology", limi
 
     log.info("Threads: Starting scrape for %s (Limit: %d)...", search_desc, limit)
 
-    # 1. Try Playwright Headless Browser (best for GitHub Actions)
+    # 1. Try Playwright Headless Browser (with system Chrome fallback for macOS)
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+            browser = None
+            for launch_fn in [
+                lambda: p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox']),
+                lambda: p.chromium.launch(channel="chrome", headless=True, args=['--no-sandbox', '--disable-setuid-sandbox']),
+                lambda: p.chromium.launch(channel="msedge", headless=True, args=['--no-sandbox', '--disable-setuid-sandbox']),
+                lambda: p.firefox.launch(headless=True),
+                lambda: p.webkit.launch(headless=True),
+            ]:
+                try:
+                    browser = launch_fn()
+                    break
+                except Exception:
+                    continue
+
+            if not browser:
+                raise RuntimeError("No working Playwright browser engine found")
+
             context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
             page = context.new_page()
 
@@ -220,26 +236,25 @@ def fetch_threads(seen: set, mode: str = "tag", target: str = "technology", limi
                     time.sleep(2)
                     
                     # Scroll down to load content
-                    for _ in range(3):
-                        page.evaluate("window.scrollBy(0, 800)")
+                    for _ in range(5):
+                        page.evaluate("window.scrollBy(0, 1000)")
                         time.sleep(1)
 
                     content = page.content()
                     
-                    matches = re.findall(r'"identifier":"(\d+)"', content)
+                    post_links = re.findall(r'href="(/@[^/]+/post/([^\s"/]+))"', content)
                     texts = re.findall(r'"text":"([^"]{10,600})"', content)
-                    users = re.findall(r'"username":"([^"]+)"', content)
 
-                    for j, mid in enumerate(matches):
+                    for j, (path, post_code) in enumerate(post_links):
                         if len(results) >= limit:
                             break
-                        if mid in seen:
+                        if post_code in seen:
                             continue
+                        user = path.split('/')[1].lstrip('@')
                         text = texts[j] if j < len(texts) else f"Threads post on #{clean_target}"
-                        user = users[j] if j < len(users) else (clean_target if mode in ["user", "profile"] else "threads_user")
-                        post_url = f"https://www.threads.net/@{user}/post/{mid}"
+                        post_url = f"https://www.threads.net{path}"
                         lang = detect_language(text)
-                        seen.add(mid)
+                        seen.add(post_code)
                         results.append([now_utc(), "Threads", f"@{user}", lang, post_url, text.replace("\n", " ")])
                 except Exception as e:
                     log.debug("Threads Playwright error for %s: %s", target_url, e)
