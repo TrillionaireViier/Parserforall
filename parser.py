@@ -36,6 +36,24 @@ log = logging.getLogger("parserforall")
 
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
 
+import codecs
+
+def clean_unescape_text(text: str) -> str:
+    """Safely decode unicode escape sequences like \\u00fc into clean UTF-8 characters."""
+    if not isinstance(text, str):
+        return ""
+    if "\\u" in text or "\\n" in text:
+        try:
+            json_str = '"' + text.replace('"', '\\"').replace('\n', '\\n') + '"'
+            return json.loads(json_str)
+        except Exception:
+            try:
+                return codecs.decode(text, 'unicode_escape')
+            except Exception:
+                pass
+    return text.strip()
+
+
 def load_seen_ids() -> set:
     """Load already-processed post IDs from disk."""
     p = Path(config.SEEN_IDS_FILE)
@@ -69,13 +87,14 @@ def save_local_artifacts(rows: list[list]) -> None:
             existing_data = []
 
     for r in rows:
+        cleaned_text = clean_unescape_text(r[5])
         existing_data.append({
             "timestamp": r[0],
             "source": r[1],
             "author": r[2],
             "language": r[3],
             "url": r[4],
-            "text": r[5]
+            "text": cleaned_text
         })
 
     json_path.write_text(json.dumps(existing_data, indent=2, ensure_ascii=False), encoding="utf-8")

@@ -1,49 +1,69 @@
 """
 =============================================================
-  Crypto & Social Media Scraper — Configuration
-  Monitors Twitter/X, Threads, Facebook, Instagram
-  for crypto ban/block news in EN, RU, UK
+  Parserforall — Universal Scraper Configuration
+  Monitors Threads, Twitter/X, Facebook, Instagram
+  Niches: Freelance Projects · Marketing · IT & Web Dev · Business Plans
+  Languages: EN, DE, FR, ES, IT, RU, UK
 =============================================================
 """
 
 import os
 from pathlib import Path
 
-# ─── KEYWORDS ────────────────────────────────────────────────────────────────
+# ─── MULTI-LANGUAGE KEYWORDS ──────────────────────────────────────────────────
 KEYWORDS = {
-    "en": [
-        "crypto banned", "banned crypto", "crypto blocked", "blocked from crypto",
-        "crypto account suspended", "exchange ban", "crypto exchange blocked",
-        "bitcoin banned", "defi blocked", "nft banned", "crypto regulation ban",
-        "wallet blocked", "crypto suspended", "binance banned", "coinbase ban",
-        "usdt blocked", "stablecoin ban", "crypto frozen", "account frozen crypto",
-        "sanctions crypto", "crypto blacklist",
+    # ── 1. FREELANCE & HIRING ──
+    "freelance": [
+        "web developer needed", "looking for developer", "hiring developer",
+        "freelance project", "hiring designer", "looking for programmer",
+        "suche entwickler", "webentwickler gesucht", "freelancer gesucht",
+        "cherche développeur", "recherche développeur web", "mission freelance",
+        "se busca desarrollador", "busco programador", "proyecto freelance",
+        "cercasi sviluppatore web", "lavoro freelance",
+        "нужен разработчик", "ищу программиста", "нужен веб-дизайнер", "фриланс проект",
+        "потрібен розробник", "шукаю програміста", "потрібен веб-дизайнер"
     ],
-    "ru": [
-        "крипто заблокировали", "заблокировали криптобиржу", "бан в крипте",
-        "крипто бан", "биткоин запретили", "запрет крипты", "заморозили счёт",
-        "криптобиржа заблокирована", "крипто заморожено", "санкции крипта",
-        "токен заблокирован", "кошелёк заморожен", "binance заблокировали",
-        "coinbase бан", "usdt заблокировали", "defi запрет", "криптовалюта запрет",
-        "торговля крипто запрещена", "запрет цифровых активов",
+    # ── 2. MARKETING ──
+    "marketing": [
+        "digital marketing", "seo specialist", "smm manager", "lead generation",
+        "growth marketing", "marketing strategy", "content marketing", "media buyer",
+        "digitales marketing", "seo spezialist", "marketing strategie",
+        "marketing numérique", "stratégie marketing", "gestionnaire smm",
+        "marketing digital", "estrategia de marketing", "generación de leads",
+        "диджитал маркетинг", "seo специалист", "smm менеджер", "поиск лидов",
+        "маркетинг стратегія", "лидогенерация"
     ],
-    "uk": [
-        "крипту заблокували", "заблокували криптобіржу", "бан у крипті",
-        "крипто бан", "біткоїн заборонили", "заборона крипти", "заморозили рахунок",
-        "криптобіржа заблокована", "крипто заморожено", "санкції крипта",
-        "токен заблокований", "гаманець заморожено", "binance заблокували",
-        "coinbase бан", "usdt заблокували", "defi заборона", "криптовалюта заборона",
-        "торгівля крипто заборонена", "цифрові активи заборонені",
+    # ── 3. IT & WEB DEV ──
+    "it_webdev": [
+        "web development", "fullstack developer", "frontend developer",
+        "backend developer", "react developer", "python developer", "app development",
+        "software engineering", "ai development", "saas startup", "webdesign",
+        "webentwicklung", "softwareentwickler", "app entwicklung",
+        "développement web", "développeur fullstack", "création сайт",
+        "desarrollo web", "desarrollador fullstack", "programación web",
+        "разработка сайтов", "веб-разработка", "создание сайтов", "мобильная разработка",
+        "розробка сайтів", "веб-розробка", "створення сайтів"
     ],
+    # ── 4. BUSINESS PLANS & STARTUPS ──
+    "business_plan": [
+        "business plan", "startup pitch", "business development", "pitch deck",
+        "investor deck", "business idea", "cofounder wanted", "startup idea",
+        "business-plan", "businessplan erstellen", "investorensuche",
+        "plan d'affaires", "pitch startup", "recherche investisseur",
+        "plan de negocios", "idea de negocio", "busco socio",
+        "бизнес план", "стартап питч", "бизнес идея", "поиск инвестора", "ищу партнера",
+        "бізнес план", "стартап пітч", "бізнес ідея", "пошук інвестора"
+    ]
 }
 
-# Flatten to one list (used by scrapers)
+# Flatten to full target search list
+ALL_TARGET_CATEGORIES = ["freelance", "marketing", "webdev", "businessplan"]
 ALL_KEYWORDS = list(set(kw for kws in KEYWORDS.values() for kw in kws))
 
 # ─── DYNAMIC TARGET SCRAPE PARAMETERS ──────────────────────────────────────
 SCRAPE_PLATFORM = os.environ.get("SCRAPE_PLATFORM", "threads")  # threads, twitter, facebook, instagram, all
 SCRAPE_MODE = os.environ.get("SCRAPE_MODE", "tag")             # tag / hashtag, user / profile, keyword
-SCRAPE_TARGET = os.environ.get("SCRAPE_TARGET", "technology")   # target name, tag, or hashtag
+SCRAPE_TARGET = os.environ.get("SCRAPE_TARGET", "freelance")    # freelance, marketing, webdev, businessplan
 SCRAPE_LIMIT = int(os.environ.get("SCRAPE_LIMIT", "999"))        # post limit (default 999)
 
 # ─── TWITTER / X ────────────────────────────────────────────────────────────
@@ -52,28 +72,24 @@ TWITTER_MAX_RESULTS = 100   # 10–100 per API page
 
 # ─── FACEBOOK / INSTAGRAM  ──────────────────────────────────────────────────
 META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "YOUR_META_ACCESS_TOKEN")
-FACEBOOK_PAGES = [
-    "CoinDesk", "CoinTelegraph", "decrypt.co", "TheBlock",
-]
+FACEBOOK_PAGES = ["CoinDesk", "CoinTelegraph", "decrypt.co", "TheBlock"]
 INSTAGRAM_ACCOUNTS = []
 
 # ─── THREADS ────────────────────────────────────────────────────────────────
-THREADS_SEARCH_ENABLED = True   # set False to skip if blocked
+THREADS_SEARCH_ENABLED = True
 
 # ─── GOOGLE SHEETS ──────────────────────────────────────────────────────────
-# Accepts either file path OR raw JSON secret string
 GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "google_service_account.json")
 GOOGLE_SHEET_ID = os.environ.get("GOOGLE_SHEET_ID", "YOUR_GOOGLE_SHEET_ID")
-GOOGLE_SHEET_TAB = "Crypto Bans"
+GOOGLE_SHEET_TAB = "Scraped Leads"
 
-# Auto-handle raw JSON string passed in environment variables
 if GOOGLE_SERVICE_ACCOUNT_JSON.strip().startswith("{"):
     credentials_path = Path("service_account_credentials.json")
     credentials_path.write_text(GOOGLE_SERVICE_ACCOUNT_JSON, encoding="utf-8")
     GOOGLE_SERVICE_ACCOUNT_JSON = str(credentials_path)
 
 # ─── SCHEDULING ──────────────────────────────────────────────────────────────
-POLL_INTERVAL_MINUTES = int(os.environ.get("POLL_INTERVAL_MINUTES", "30"))
+POLL_INTERVAL_MINUTES = int(os.environ.get("POLL_INTERVAL_MINUTES", "15"))
 
 # ─── MISC & OUTPUT FILES ─────────────────────────────────────────────────────
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
