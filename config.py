@@ -2,28 +2,52 @@
 =============================================================
   Parserforall — Universal Scraper Configuration
   Monitors Threads, Twitter/X, Facebook, Instagram
-  Niches: Freelance Projects · Marketing · IT & Web Dev · Business Plans
-  Languages: EN, DE, FR, ES, IT, RU, UK
+  Primary Categories: IT (Web & App Dev) · Marketing · Business Plan
+  European Regions: Western Europe, Southern Europe, Northern Europe, Central & Eastern Europe
 =============================================================
 """
 
 import os
 from pathlib import Path
 
-# ─── MULTI-LANGUAGE KEYWORDS ──────────────────────────────────────────────────
-KEYWORDS = {
-    # ── 1. FREELANCE & HIRING ──
-    "freelance": [
-        "web developer needed", "looking for developer", "hiring developer",
-        "freelance project", "hiring designer", "looking for programmer",
-        "suche entwickler", "webentwickler gesucht", "freelancer gesucht",
-        "cherche développeur", "recherche développeur web", "mission freelance",
-        "se busca desarrollador", "busco programador", "proyecto freelance",
-        "cercasi sviluppatore web", "lavoro freelance",
-        "нужен разработчик", "ищу программиста", "нужен веб-дизайнер", "фриланс проект",
-        "потрібен розробник", "шукаю програміста", "потрібен веб-дизайнер"
+# ─── 3 PRIMARY CATEGORIES WITH ALL EUROPEAN INTENT PHRASES ─────────────────────
+CATEGORIES = {
+    # ── 1. IT / WEB & APP DEVELOPMENT ──
+    "it": [
+        # Western Europe
+        "brauche eine website", "wer kann mir eine homepage erstellen", "webentwickler gesucht", "suche entwickler",
+        "cherche développeur pour créer un site", "besoin d'un site web urgent", "recherche développeur web",
+        "zoek een webdesigner voor een website", "ik wil een website laten maken",
+        # Southern Europe
+        "busco programador para crear web", "alguien que haga páginas web", "se busca desarrollador",
+        "cerco sviluppatore per creare un sito web", "ho bisogno di fare un sito", "cercasi sviluppatore web",
+        "preciso de um site profissional", "procuro alguém para criar site",
+        "ψάχνω προγραμματιστή για ιστοσελίδα",
+        # Northern Europe (Scandinavia & Baltics)
+        "letar efter någon som kan bygga en hemsida", "behöver hjälp med att skapa en hemsida",
+        "trenger hjelp til å lage en nettside",
+        "søger en der kan lave en hjemmeside",
+        "etsin nettisivujen tekijää",
+        "otsin kodulehe tegijat",
+        "meklēju mājas lapas izstrādātāju",
+        "ieškau kas sukurtų interneto svetainę",
+        # Central & Eastern Europe
+        "szukam kogoś do zrobienia strony www", "potrzebuję pilnie strony internetowej",
+        "hledám někoho na tvorbu webu",
+        "hľadám programátora na vytvorenie webu",
+        "honlapkészítőt keresek",
+        "caut programator pentru creare site web",
+        "търся човек за изработка на сайт",
+        "tražim nekoga za izradu web stranice",
+        "iščem izdelovalca spletnih strani",
+        # Ukraine, US & General
+        "створюю зараз сайт", "сайт заказала", "треба зробити сайт", "потрібен сайт", "шукаю розробника",
+        "нужно сделать сайт", "заказать сайт", "ищу кто сделает сайт",
+        "web developer needed", "looking for developer", "hiring developer", "need a website made",
+        "want to build a website", "react developer", "fullstack developer", "python developer", "app development"
     ],
-    # ── 2. MARKETING ──
+
+    # ── 2. DIGITAL MARKETING & GROWTH ──
     "marketing": [
         "digital marketing", "seo specialist", "smm manager", "lead generation",
         "growth marketing", "marketing strategy", "content marketing", "media buyer",
@@ -31,21 +55,11 @@ KEYWORDS = {
         "marketing numérique", "stratégie marketing", "gestionnaire smm",
         "marketing digital", "estrategia de marketing", "generación de leads",
         "диджитал маркетинг", "seo специалист", "smm менеджер", "поиск лидов",
-        "маркетинг стратегія", "лидогенерация"
+        "маркетинг стратегія", "лидогенерация", "маркетинг для бізнесу"
     ],
-    # ── 3. IT & WEB DEV ──
-    "it_webdev": [
-        "web development", "fullstack developer", "frontend developer",
-        "backend developer", "react developer", "python developer", "app development",
-        "software engineering", "ai development", "saas startup", "webdesign",
-        "webentwicklung", "softwareentwickler", "app entwicklung",
-        "développement web", "développeur fullstack", "création сайт",
-        "desarrollo web", "desarrollador fullstack", "programación web",
-        "разработка сайтов", "веб-разработка", "создание сайтов", "мобильная разработка",
-        "розробка сайтів", "веб-розробка", "створення сайтів"
-    ],
-    # ── 4. BUSINESS PLANS & STARTUPS ──
-    "business_plan": [
+
+    # ── 3. BUSINESS PLAN & STARTUPS ──
+    "businessplan": [
         "business plan", "startup pitch", "business development", "pitch deck",
         "investor deck", "business idea", "cofounder wanted", "startup idea",
         "business-plan", "businessplan erstellen", "investorensuche",
@@ -56,37 +70,40 @@ KEYWORDS = {
     ]
 }
 
-# ─── CLIENT INTENT PATTERNS (People looking to order/build websites or apps) ──
+# Alias mapping for backward compatibility
+KEYWORDS = {
+    "it": CATEGORIES["it"],
+    "marketing": CATEGORIES["marketing"],
+    "business_plan": CATEGORIES["businessplan"]
+}
+
+# High Client Intent patterns
 INTENT_PATTERNS = [
-    # Ukrainian
-    r"створюю\s+зараз\s+сайт", r"сайт\s+заказала", r"треба\s+зробити\s+сайт",
-    r"потрібен\s+сайт", r"хто\s+зробить\s+сайт", r"шукаю\s+хто\s+зробить", r"хочу\s+сайт",
-    # English
-    r"want\s+to\s+build\s+a\s+website", r"need\s+a\s+website\s+made", r"looking\s+to\s+order\s+a\s+website",
-    r"hiring\s+someone\s+to\s+build", r"need\s+a\s+developer\s+to\s+build",
-    # German
-    r"brauche\s+eine\s+website", r"website\s+erstellen\s+lassen", r"wer\s+kann\s+mir\s+eine\s+website",
-    # French
-    r"besoin\s+d'un\s+site", r"cherche\s+quelqu'un\s+pour\s+créer\s+un\s+site",
-    # Spanish
-    r"necesito\s+una\s+página\s+web", r"busco\s+quién\s+me\s+haga\s+una\s+web",
-    # Russian
-    r"нужно\s+сделать\s+сайт", r"заказать\s+сайт", r"ищу\s+кто\s+сделает\s+сайт"
+    r"brauche\s+eine\s+website", r"wer\s+kann\s+mir\s+eine\s+homepage", r"cherche\s+développeur",
+    r"besoin\s+d'un\s+site", r"zoek\s+een\s+webdesigner", r"ik\s+wil\s+een\s+website",
+    r"busco\s+programador", r"alguien\s+que\s+haga\s+páginas", r"cerco\s+sviluppatore",
+    r"ho\s+bisogno\s+di\s+fare\s+un\s+sito", r"preciso\s+de\s+um\s+site", r"procuro\s+alguém\s+para\s+criar\s+site",
+    r"ψάχνω\s+προγραμματιστή", r"letar\s+efter\s+någon\s+som\s+kan\s+bygga", r"behöver\s+hjälp\s+med\s+att\s+skapa",
+    r"trenger\s+hjelp\s+til\s+å\s+lage", r"søger\s+en\s+der\s+kan\s+lave", r"etsin\s+nettisivujen",
+    r"otsin\s+kodulehe", r"meklēju\s+mājas\s+lapas", r"ieškau\s+kas\s+sukurtų",
+    r"szukam\s+kogoś\s+do\s+zrobienia\s+strony", r"potrzebuję\s+pilnie\s+strony", r"hledám\s+někoho\s+na\s+tvorbu",
+    r"hľadám\s+programátora", r"honlapkészítőt\s+keresek", r"caut\s+programator", r"търся\s+човек\s+за\s+изработка",
+    r"tražim\s+nekoga\s+za\s+izradu", r"iščem\s+izdelovalca", r"створюю\s+зараз\s+сайт", r"сайт\s+заказала",
+    r"треба\s+зробити\s+сайт", r"потрібен\s+сайт", r"нужно\s+сделать\s+сайт", r"заказать\s+сайт"
 ]
 
-# Flatten to full target search list
-ALL_TARGET_CATEGORIES = ["freelance", "marketing", "webdev", "businessplan"]
-ALL_KEYWORDS = list(set(kw for kws in KEYWORDS.values() for kw in kws))
+ALL_TARGET_CATEGORIES = ["it", "marketing", "businessplan"]
+ALL_KEYWORDS = list(set(kw for kws in CATEGORIES.values() for kw in kws))
 
 # ─── DYNAMIC TARGET SCRAPE PARAMETERS ──────────────────────────────────────
 SCRAPE_PLATFORM = os.environ.get("SCRAPE_PLATFORM", "threads")  # threads, twitter, facebook, instagram, all
 SCRAPE_MODE = os.environ.get("SCRAPE_MODE", "tag")             # tag / hashtag, user / profile, keyword
-SCRAPE_TARGET = os.environ.get("SCRAPE_TARGET", "freelance")    # freelance, marketing, webdev, businessplan
+SCRAPE_TARGET = os.environ.get("SCRAPE_TARGET", "it")           # it, marketing, businessplan
 SCRAPE_LIMIT = int(os.environ.get("SCRAPE_LIMIT", "999"))        # post limit (default 999)
 
 # ─── TWITTER / X ────────────────────────────────────────────────────────────
 TWITTER_BEARER_TOKEN = os.environ.get("TWITTER_BEARER_TOKEN", "YOUR_TWITTER_BEARER_TOKEN")
-TWITTER_MAX_RESULTS = 100   # 10–100 per API page
+TWITTER_MAX_RESULTS = 100
 
 # ─── FACEBOOK / INSTAGRAM  ──────────────────────────────────────────────────
 META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "YOUR_META_ACCESS_TOKEN")

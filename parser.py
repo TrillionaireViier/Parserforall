@@ -170,12 +170,41 @@ def matches_keywords(text: str) -> bool:
     return any(kw.lower() in low for kw in config.ALL_KEYWORDS)
 
 
+LANG_PATTERNS = {
+    "UK": ["створюю", "сайт", "треба", "потрібен", "шукаю", "хочу", "гарно"],
+    "DE": ["brauche", "website", "homepage", "erstellen", "gesucht", "entwickler", "unsere"],
+    "FR": ["cherche", "développeur", "créer", "site", "besoin", "urgent", "références"],
+    "NL": ["zoek", "webdesigner", "website", "maken", "laten"],
+    "ES": ["busco", "programador", "páginas", "haga", "desarrollador", "propuesta"],
+    "IT": ["cerco", "sviluppatore", "creare", "sito", "bisogno"],
+    "PT": ["preciso", "site", "profissional", "procuro", "alguém", "criar"],
+    "EL": ["ψάχνω", "προγραμματιστή", "ιστοσελίδα"],
+    "SV": ["letar", "hemsida", "behöver", "hjälp", "skapa"],
+    "NO": ["trenger", "hjelp", "lage", "nettside"],
+    "DA": ["søger", "der", "lave", "hjemmeside"],
+    "FI": ["etsin", "nettisivujen", "tekijää"],
+    "ET": ["otsin", "kodulehe", "tegijat"],
+    "LV": ["meklēju", "mājas", "lapas"],
+    "LT": ["ieškau", "sukurtų", "interneto"],
+    "PL": ["szukam", "zrobienia", "strony", "potrzebuję"],
+    "CS": ["hledám", "tvorbu", "webu"],
+    "SK": ["hľadám", "programátora", "vytvorenie"],
+    "HU": ["honlapkészítőt", "keresek"],
+    "RO": ["caut", "programator", "site"],
+    "BG": ["търся", "изработка", "сайт"],
+    "HR": ["tražim", "izradu", "stranice"],
+    "SL": ["iščem", "izdelovalca", "strani"],
+    "RU": ["ищем", "нужен", "разработчик", "стартапа"],
+}
+
 def detect_language(text: str) -> str:
-    """Naïve language detection based on keyword match."""
+    """Detect European language code from text."""
+    if not text:
+        return "EN"
     low = text.lower()
-    for lang, kws in config.KEYWORDS.items():
-        if any(kw.lower() in low for kw in kws):
-            return lang.upper()
+    for lang, markers in LANG_PATTERNS.items():
+        if any(m in low for m in markers):
+            return lang
     return "EN"
 
 
