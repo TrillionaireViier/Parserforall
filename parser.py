@@ -126,8 +126,33 @@ def save_local_artifacts(rows: list[list]) -> None:
              len(rows), config.RESULTS_JSON_FILE, config.RESULTS_CSV_FILE, config.RESULTS_TXT_FILE)
 
 
+SCAM_SPAM_PATTERNS = [
+    r"age:\s*\d{2}\s*to\s*\d{2}",       # e.g. "Age: 22 to 50 can apply"
+    r"age\s*\d{2}-\d{2}",               # e.g. "age 18-50"
+    r"hk\$\s*\d+",                      # e.g. "HK$25,000"
+    r"work\s*style:\s*step\s*by\s*step", # bot template phrase
+    r"whatsapp\s*me",                   # whatsapp spam redirect
+    r"t\.me/",                          # telegram spam redirect
+    r"earn\s*\$\d+\s*daily",            # get rich quick spam
+    r"crypto\s*doubler",                # investment scam
+    r"go\s*away\s*bot",                  # bot reply noise
+]
+
+def is_scam_or_spam(text: str) -> bool:
+    """Return True if text matches known scammy/spam bot patterns."""
+    if not text or len(text.strip()) < 15:
+        return True
+    low = text.lower()
+    for pattern in SCAM_SPAM_PATTERNS:
+        if re.search(pattern, low):
+            return True
+    return False
+
+
 def matches_keywords(text: str) -> bool:
-    """Return True if text contains any monitored keyword or target (case-insensitive)."""
+    """Return True if text contains any monitored keyword and is not scam/spam."""
+    if is_scam_or_spam(text):
+        return False
     low = text.lower()
     return any(kw.lower() in low for kw in config.ALL_KEYWORDS)
 
@@ -271,6 +296,8 @@ def fetch_threads(seen: set, mode: str = "tag", target: str = "technology", limi
                             continue
                         user = path.split('/')[1].lstrip('@')
                         text = texts[j] if j < len(texts) else f"Threads post on #{clean_target}"
+                        if is_scam_or_spam(text):
+                            continue
                         post_url = f"https://www.threads.net{path}"
                         lang = detect_language(text)
                         seen.add(post_code)
@@ -306,6 +333,8 @@ def fetch_threads(seen: set, mode: str = "tag", target: str = "technology", limi
                 if mid in seen:
                     continue
                 text = texts[j] if j < len(texts) else f"Threads post on #{clean_target}"
+                if is_scam_or_spam(text):
+                    continue
                 user = users[j] if j < len(users) else (clean_target if mode in ["user", "profile"] else "threads_user")
                 post_url = f"https://www.threads.net/@{user}/post/{mid}"
                 lang = detect_language(text)
