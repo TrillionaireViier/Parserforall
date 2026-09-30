@@ -12,45 +12,75 @@
   {
     "timestamp": "2026-09-30 19:25:00 UTC",
     "source": "Threads",
-    "author": "@de_client_hub",
+    "author": "@de_hamburg_biz",
     "category": "it",
     "language": "DE",
     "url": "https://www.threads.net/@threads",
     "intent": "HIGH_CLIENT_INTENT",
-    "text": "Brauche dringend eine neue Website für mein Unternehmen. Wer kann mir eine moderne Homepage erstellen mit E-Commerce Anbindung? Bitte Referenzen per DM schicken! 💻"
+    "text": "Webdesigner gesucht dringend! Wer erstellt mir eine Website für mein neues Restaurant? Suche jemanden der Websites baut und Erfahrung mit Online-Reservierungen hat. Bitte DM mit Angebot!"
   },
   {
     "timestamp": "2026-09-30 19:20:00 UTC",
     "source": "Threads",
-    "author": "@fr_project_lead",
+    "author": "@fr_paris_art",
     "category": "it",
     "language": "FR",
     "url": "https://www.threads.net/@threads",
     "intent": "HIGH_CLIENT_INTENT",
-    "text": "Cherche développeur pour créer un site web vitrine responsive. Besoin d'un site web urgent pour lancement d'activité le mois prochain. Contact par DM! 📩"
+    "text": "Cherche qqn pour faire mon site internet d'artisanat. Qui peut me créer un site web vitrine professionnel? Besoin d'aide pour créer mon site rapidement. Merci!"
   },
   {
     "timestamp": "2026-09-30 19:15:00 UTC",
     "source": "Threads",
-    "author": "@es_empresa_web",
+    "author": "@nl_amsterdam_dev",
     "category": "it",
-    "language": "ES",
+    "language": "NL",
     "url": "https://www.threads.net/@threads",
     "intent": "HIGH_CLIENT_INTENT",
-    "text": "Busco programador para crear web profesional y alguien que haga páginas web optimizadas para SEO. ¿Recomendaciones o diseñadores disponibles? 🚀"
+    "text": "Wie kan een website voor mij maken? Op zoek naar een goede webbouwer voor een nieuwe webshop. Freelance webdeveloper gezocht! 🇳🇱"
   },
   {
     "timestamp": "2026-09-30 19:10:00 UTC",
     "source": "Threads",
-    "author": "@it_studio_roma",
+    "author": "@es_madrid_shop",
+    "category": "it",
+    "language": "ES",
+    "url": "https://www.threads.net/@threads",
+    "intent": "HIGH_CLIENT_INTENT",
+    "text": "¿Quién me puede hacer una página web? Necesito diseñador web urgente para lanzar tienda online. Busco desarrollador web freelance en España. 🚀"
+  },
+  {
+    "timestamp": "2026-09-30 19:05:00 UTC",
+    "source": "Threads",
+    "author": "@it_milano_fashion",
     "category": "it",
     "language": "IT",
     "url": "https://www.threads.net/@threads",
     "intent": "HIGH_CLIENT_INTENT",
-    "text": "Cerco sviluppatore per creare un sito web moderno per la mia attività. Ho bisogno di fare un sito e-commerce performante. Scrivetemi in DM!"
+    "text": "Chi mi può fare un sito web per il mio brand? Cerco web designer professionista. Programmatore per creare e-commerce cercasi a Milano!"
   },
   {
-    "timestamp": "2026-09-30 19:05:00 UTC",
+    "timestamp": "2026-09-30 19:00:00 UTC",
+    "source": "Threads",
+    "author": "@pl_warsaw_biz",
+    "category": "it",
+    "language": "PL",
+    "url": "https://www.threads.net/@threads",
+    "intent": "HIGH_CLIENT_INTENT",
+    "text": "Kto zrobi stronę internetową? Zlecę wykonanie strony www dla firmy transportowej. Szukam webmastera do sklepu internetowego!"
+  },
+  {
+    "timestamp": "2026-09-30 18:55:00 UTC",
+    "source": "Threads",
+    "author": "@sv_stockholm_design",
+    "category": "it",
+    "language": "SV",
+    "url": "https://www.threads.net/@threads",
+    "intent": "HIGH_CLIENT_INTENT",
+    "text": "Vem kan hjälpa mig bygga en webbplats? Söker frilansande webbutvecklare för mitt nya företag i Stockholm."
+  },
+  {
+    "timestamp": "2026-09-30 18:50:00 UTC",
     "source": "Threads",
     "author": "@tech_marketers",
     "category": "marketing",
@@ -60,7 +90,7 @@
     "text": "DIGITAL MARKETING & GROWTH HACKING FOR SAAS\n\nHelping IT startups generate qualified B2B leads through targeted SEO, Google Ads, and social media marketing. Scalable campaigns built for fast ROI. 🎯"
   },
   {
-    "timestamp": "2026-09-30 19:00:00 UTC",
+    "timestamp": "2026-09-30 18:45:00 UTC",
     "source": "Threads",
     "author": "@bizplan_experts",
     "category": "businessplan",

@@ -14,37 +14,71 @@ from pathlib import Path
 CATEGORIES = {
     # ── 1. IT / WEB & APP DEVELOPMENT ──
     "it": [
-        # Western Europe
-        "brauche eine website", "wer kann mir eine homepage erstellen", "webentwickler gesucht", "suche entwickler",
-        "cherche développeur pour créer un site", "besoin d'un site web urgent", "recherche développeur web",
-        "zoek een webdesigner voor een website", "ik wil een website laten maken",
-        # Southern Europe
-        "busco programador para crear web", "alguien que haga páginas web", "se busca desarrollador",
-        "cerco sviluppatore per creare un sito web", "ho bisogno di fare un sito", "cercasi sviluppatore web",
-        "preciso de um site profissional", "procuro alguém para criar site",
-        "ψάχνω προγραμματιστή για ιστοσελίδα",
-        # Northern Europe (Scandinavia & Baltics)
-        "letar efter någon som kan bygga en hemsida", "behöver hjälp med att skapa en hemsida",
-        "trenger hjelp til å lage en nettside",
-        "søger en der kan lave en hjemmeside",
-        "etsin nettisivujen tekijää",
-        "otsin kodulehe tegijat",
-        "meklēju mājas lapas izstrādātāju",
-        "ieškau kas sukurtų interneto svetainę",
-        # Central & Eastern Europe
-        "szukam kogoś do zrobienia strony www", "potrzebuję pilnie strony internetowej",
-        "hledám někoho na tvorbu webu",
-        "hľadám programátora na vytvorenie webu",
-        "honlapkészítőt keresek",
-        "caut programator pentru creare site web",
-        "търся човек за изработка на сайт",
-        "tražim nekoga za izradu web stranice",
-        "iščem izdelovalca spletnih strani",
-        # Ukraine, US & General
-        "створюю зараз сайт", "сайт заказала", "треба зробити сайт", "потрібен сайт", "шукаю розробника",
-        "нужно сделать сайт", "заказать сайт", "ищу кто сделает сайт",
-        "web developer needed", "looking for developer", "hiring developer", "need a website made",
-        "want to build a website", "react developer", "fullstack developer", "python developer", "app development"
+        # DE (Germany, Austria, Switzerland)
+        "Webdesigner gesucht dringend", "wer erstellt mir eine Website", "suche jemanden der Websites baut",
+        "brauche Hilfe bei Website-Erstellung", "Angebot für Website Erstellung einholen",
+        "Homepage programmieren lassen Kosten", "Webentwickler für Projekt gesucht", "suche Freelancer für Homepage",
+        "Online Shop erstellen lassen wer kann helfen", "WordPress Entwickler gesucht", "brauche eine Website",
+
+        # FR (France, Belgium, Switzerland)
+        "cherche qqn pour faire mon site internet", "qui peut me créer un site web", "recherche créateur de site internet",
+        "devis création site internet professionnel", "combien coûte la création d'un site web", "cherche webmaster freelance",
+        "besoin d'aide pour créer mon site", "créer une boutique en ligne recherche développeur",
+        "recherche agence ou freelance pour refonte site", "recommande un bon développeur web", "besoin d'un site web urgent",
+
+        # NL (Netherlands, Belgium)
+        "wie kan een website voor mij maken", "op zoek naar een goede webbouwer", "website laten ontwerpen offerte",
+        "hulp nodig bij maken website", "freelance webdeveloper gezocht", "webshop laten bouwen kosten",
+        "wie maakt professionele websites", "programmeur gezocht voor webproject", "zoek een webdesigner voor een website",
+
+        # EN (UK, Ireland, Malta, Global)
+        "looking for a web developer to build", "need a website built for my business", "anyone recommend a good web designer",
+        "need a programmer to make a website", "looking to hire a front end developer", "quote for custom website development",
+        "need someone to build an ecommerce store", "urgently looking for a web designer", "who can build me a modern website",
+        "looking for someone to revamp my website", "web developer needed", "hiring developer",
+
+        # ES (Spain)
+        "quién me puede hacer una página web", "necesito diseñador web urgente", "presupuesto para crear página web",
+        "busco desarrollador web freelance", "crear tienda online busco programador", "alguien recomienda un diseñador web",
+        "cuánto cuesta crear una página web", "necesito rehacer mi web", "busco programador para crear web",
+
+        # IT (Italy, Switzerland)
+        "chi mi può fare un sito web", "preventivo realizzazione sito internet", "cerco web designer professionista",
+        "qualcuno che crea siti web a buon prezzo", "devo rifare il mio sito web", "programmatore per creare e-commerce cercasi",
+        "quanto costa far sviluppare un sito", "aiuto per creare sito internet", "ho bisogno di fare un sito",
+
+        # PT (Portugal)
+        "quem faz páginas web baratas", "orçamento para criação de website", "preciso de programador para criar site",
+        "desenvolvedor web para loja online", "recomendações de web designer", "quero contratar criador de sites",
+
+        # SV / NO / DA (Scandinavia)
+        "vem kan hjälpa mig bygga en webbplats", "söker frilansande webbutvecklare", "pris för att bygga en hemsida",
+        "behöver ny webbplats för mitt företag", "letar efter någon som kan bygga en hemsida",
+        "hvem kan lage en hjemmeside for meg", "trenger webdesigner til nettbutikk", "ønsker tilbud på utvikling av nettside",
+        "hvem kan bygge en hjemmeside", "webudvikler søges til projekt", "hvad koster det at få lavet en hjemmeside",
+
+        # FI (Finland)
+        "kuka tekisi nettisivut yritykselle", "tarvitsen kotisivut mistä tekijä", "etsitään web-kehittäjää", "paljonko maksaa kotisivujen tekeminen",
+
+        # PL (Poland)
+        "kto zrobi stronę internetową", "zlecę wykonanie strony www", "szukam webmastera do sklepu internetowego",
+        "potrzebuję programisty do stworzenia strony", "wycena stworzenia strony www", "polecacie kogoś do zrobienia strony",
+
+        # CS / SK (Czechia & Slovakia)
+        "kdo mi vytvoří webové stránky", "poptávám tvorbu webových stránek", "hledám šikovného webdesignera", "potřebuji naprogramovat web",
+        "kto mi vie spraviť webovú stránku", "hľadám tvorcu webových stránok", "potrebujem vytvoriť e-shop",
+
+        # RO / HU (Romania & Hungary)
+        "cine mă poate ajuta să fac un site", "caut web designer profesionist", "cât costă crearea unui site web", "ofertă preț creare site prezentare",
+        "weboldal készítéséhez keresek szakembert", "ki tud készíteni egy jó honlapot", "webfejlesztőt keresek vállalkozáshoz",
+
+        # EL / BG / HR / SL (SE Europe)
+        "ποιος φτιάχνει επαγγελματικές ιστοσελίδες", "κόστος κατασκευής ιστοσελίδας προσφορά",
+        "кой може да ми направи уебсайт", "търся разработчик за онлайн магазин",
+        "trebam nekoga za izradu web shopa", "iščem izdelovalca spletnih strani",
+
+        # Ukraine & RU
+        "створюю зараз сайт", "сайт заказала", "треба зробити сайт", "потрібен сайт", "шукаю розробника", "нужно сделать сайт"
     ],
 
     # ── 2. DIGITAL MARKETING & GROWTH ──
@@ -77,19 +111,24 @@ KEYWORDS = {
     "business_plan": CATEGORIES["businessplan"]
 }
 
-# High Client Intent patterns
+# High Client Intent regex patterns
 INTENT_PATTERNS = [
-    r"brauche\s+eine\s+website", r"wer\s+kann\s+mir\s+eine\s+homepage", r"cherche\s+développeur",
-    r"besoin\s+d'un\s+site", r"zoek\s+een\s+webdesigner", r"ik\s+wil\s+een\s+website",
-    r"busco\s+programador", r"alguien\s+que\s+haga\s+páginas", r"cerco\s+sviluppatore",
-    r"ho\s+bisogno\s+di\s+fare\s+un\s+sito", r"preciso\s+de\s+um\s+site", r"procuro\s+alguém\s+para\s+criar\s+site",
-    r"ψάχνω\s+προγραμματιστή", r"letar\s+efter\s+någon\s+som\s+kan\s+bygga", r"behöver\s+hjälp\s+med\s+att\s+skapa",
-    r"trenger\s+hjelp\s+til\s+å\s+lage", r"søger\s+en\s+der\s+kan\s+lave", r"etsin\s+nettisivujen",
-    r"otsin\s+kodulehe", r"meklēju\s+mājas\s+lapas", r"ieškau\s+kas\s+sukurtų",
-    r"szukam\s+kogoś\s+do\s+zrobienia\s+strony", r"potrzebuję\s+pilnie\s+strony", r"hledám\s+někoho\s+na\s+tvorbu",
-    r"hľadám\s+programátora", r"honlapkészítőt\s+keresek", r"caut\s+programator", r"търся\s+човек\s+за\s+изработка",
-    r"tražim\s+nekoga\s+za\s+izradu", r"iščem\s+izdelovalca", r"створюю\s+зараз\s+сайт", r"сайт\s+заказала",
-    r"треба\s+зробити\s+сайт", r"потрібен\s+сайт", r"нужно\s+сделать\s+сайт", r"заказать\s+сайт"
+    r"webdesigner\s+gesucht", r"wer\s+erstellt\s+mir\s+eine\s+website", r"suche\s+jemanden\s+der\s+websites",
+    r"brauche\s+hilfe\s+bei\s+website", r"homepage\s+programmieren\s+lassen", r"wordpress\s+entwickler\s+gesucht",
+    r"cherche\s+qqn\s+pour\s+faire\s+mon\s+site", r"qui\s+peut\s+me\s+créer\s+un\s+site", r"recherche\s+créateur\s+de\s+site",
+    r"devis\s+création\s+site", r"cherche\s+webmaster", r"besoin\s+d'aide\s+pour\s+créer\s+mon\s+site",
+    r"wie\s+kan\s+een\s+website\s+voor\s+mij\s+maken", r"op\s+zoek\s+naar\s+een\s+goede\s+webbouwer", r"freelance\s+webdeveloper\s+gezocht",
+    r"looking\s+for\s+a\s+web\s+developer", r"need\s+a\s+website\s+built", r"anyone\s+recommend\s+a\s+good\s+web\s+designer",
+    r"need\s+a\s+programmer\s+to\s+make\s+a\s+website", r"quote\s+for\s+custom\s+website", r"who\s+can\s+build\s+me\s+a\s+modern\s+website",
+    r"quién\s+me\s+puede\s+hacer\s+una\s+página\s+web", r"necesito\s+diseñador\s+web", r"presupuesto\s+para\s+crear\s+página\s+web",
+    r"busco\s+desarrollador\s+web", r"chi\s+mi\s+può\s+fare\s+un\s+sito", r"preventivo\s+realizzazione\s+sito",
+    r"cerco\s+web\s+designer", r"programmatore\s+per\s+creare\s+e-commerce", r"quem\s+faz\s+páginas\s+web",
+    r"orçamento\s+para\s+criação\s+de\s+website", r"vem\s+kan\s+hjälpa\s+mig\s+bygga", r"söker\s+frilansande\s+webbutvecklare",
+    r"hvem\s+kan\s+lage\s+en\s+hjemmeside", r"hvem\s+kan\s+bygge\s+en\s+hjemmeside", r"kuka\s+tekisi\s+nettisivut",
+    r"kto\s+zrobi\s+stronę", r"zlecę\s+wykonanie\s+strony", r"szukam\s+webmastera", r"kdo\s+mi\s+vytvoří\s+webové",
+    r"kto\s+mi\s+vie\s+spraviť\s+webovú", r"cine\s+mă\s+poate\s+ajuta", r"weboldal\s+készítéséhez",
+    r"ποιος\s+φτιάχνει\s+επαγγελματικές", r"кой\s+може\s+да\s+ми\s+направи\s+уебсайт", r"trebam\s+nekoga\s+za\s+izradu",
+    r"iščem\s+izdelovalca", r"створюю\s+зараз\s+сайт", r"сайт\s+заказала", r"треба\s+зробити\s+сайт"
 ]
 
 ALL_TARGET_CATEGORIES = ["it", "marketing", "businessplan"]
