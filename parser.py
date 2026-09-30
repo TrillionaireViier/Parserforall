@@ -450,7 +450,33 @@ def fetch_instagram(seen: set, target: str = "", limit: int = 5) -> list[list]:
 
 # ─── MAIN COLLECTION CYCLE ───────────────────────────────────────────────────
 
-def run_once(platform: str = None, mode: str = None, target: str = None, limit: int = None):
+def send_webhook(all_rows: list[list], webhook_url: str, platform: str, mode: str, target: str):
+    if not webhook_url or not all_rows:
+        return
+    try:
+        formatted_posts = [
+            {
+                "timestamp": row[0],
+                "source": row[1],
+                "author": row[2],
+                "language": row[3],
+                "url": row[4],
+                "text": row[5]
+            } for row in all_rows
+        ]
+        payload = {
+            "platform": platform,
+            "mode": mode,
+            "target": target,
+            "results": formatted_posts
+        }
+        res = requests.post(webhook_url, json=payload, timeout=10)
+        log.info("Webhook POST to %s status: %d", webhook_url, res.status_code)
+    except Exception as e:
+        log.warning("Webhook post failed (%s): %s", webhook_url, e)
+
+
+def run_once(platform: str = None, mode: str = None, target: str = None, limit: int = None, webhook: str = None):
     """Run one collection cycle with dynamic parameters."""
     target_platform = (platform or config.SCRAPE_PLATFORM or "threads").lower()
     target_mode = (mode or config.SCRAPE_MODE or "tag").lower()
@@ -480,6 +506,9 @@ def run_once(platform: str = None, mode: str = None, target: str = None, limit: 
         save_local_artifacts(all_rows)
         if ws:
             append_rows_to_sheet(ws, all_rows)
+        if webhook or os.environ.get("WEBHOOK_URL"):
+            url = webhook or os.environ.get("WEBHOOK_URL")
+            send_webhook(all_rows, url, target_platform, target_mode, target_name)
     else:
         log.info("No new matching posts found this cycle.")
 
@@ -494,6 +523,7 @@ def main():
     parser.add_argument("--mode", default=config.SCRAPE_MODE, help="tag, user, keyword")
     parser.add_argument("--target", default=config.SCRAPE_TARGET, help="Target hashtag, username, or search keyword (e.g. technology)")
     parser.add_argument("--limit", type=int, default=config.SCRAPE_LIMIT, help="Max posts to parse (e.g. 5)")
+    parser.add_argument("--webhook", default=os.environ.get("WEBHOOK_URL"), help="Webhook URL to POST JSON results to (e.g. https://parserforall.vercel.app/api)")
     parser.add_argument("--loop", action="store_true", help="Run continuously on interval")
 
     args = parser.parse_args()
@@ -502,13 +532,13 @@ def main():
         log.info("Continuous mode started. Interval: %d min", config.POLL_INTERVAL_MINUTES)
         while True:
             try:
-                run_once(platform=args.platform, mode=args.mode, target=args.target, limit=args.limit)
+                run_once(platform=args.platform, mode=args.mode, target=args.target, limit=args.limit, webhook=args.webhook)
             except Exception as e:
                 log.error("Unhandled error in cycle: %s", e, exc_info=True)
             log.info("Sleeping %d minutes …", config.POLL_INTERVAL_MINUTES)
             time.sleep(config.POLL_INTERVAL_MINUTES * 60)
     else:
-        run_once(platform=args.platform, mode=args.mode, target=args.target, limit=args.limit)
+        run_once(platform=args.platform, mode=args.mode, target=args.target, limit=args.limit, webhook=args.webhook)
 
 
 if __name__ == "__main__":
