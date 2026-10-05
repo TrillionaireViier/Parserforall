@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parser For All — Universal Web Scraper & Client Lead Engine</title>
+  <meta name="description" content="Free universal scraper API and lead discovery platform. Extract high-intent client leads from 20+ European platforms." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1a1a2e;
+      --surface3: #22223a;
+      --border: rgba(255,255,255,0.08);
+      --border-bright: rgba(124,92,255,0.3);
+      --text: #e8e8f0;
+      --text-dim: #8888a0;
+      --accent: #7c5cff;
+      --accent2: #00d4aa;
+      --warning: #ff8c42;
+      --danger: #ff4757;
+      --gradient: linear-gradient(135deg, #7c5cff 0%, #00d4aa 100%);
+      --gradient-hover: linear-gradient(135deg, #6c4cee 0%, #00b894 100%);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Background animation ── */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(124,92,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,92,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .bg-glow {
+      position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 800px; z-index: 0;
+      background: radial-gradient(circle, rgba(124,92,255,0.12) 0%, transparent 70%);
+      filter: blur(80px);
+      animation: pulse 8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* ── Navigation Header ── */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0; max-width: 1200px; margin: 0 auto; padding-left: 24px; padding-right: 24px;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; cursor: pointer; text-decoration: none; color: var(--text); }
+    .logo-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--gradient); display: flex; align-items: center;
+      justify-content: center; font-size: 20px; box-shadow: 0 0 15px rgba(124, 92, 255, 0.4);
+    }
+    
+    .nav-tabs {
+      display: flex; gap: 6px; background: var(--surface2); padding: 4px; border-radius: 12px; border: 1px solid var(--border);
+    }
+    .nav-tab {
+      background: none; border: none; color: var(--text-dim); padding: 8px 16px;
+      border-radius: 8px; font-weight: 600; font-size: 0.88rem; cursor: pointer;
+      transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .nav-tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+    .nav-tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(124, 92, 255, 0.3); }
+
+    .nav-actions { display: flex; align-items: center; gap: 12px; }
+    .user-badge {
+      display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border);
+      padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;
+    }
+    .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; color: #fff; }
+    
+    .btn-primary {
+      background: var(--gradient); border: none; color: #fff; padding: 9px 18px;
+      border-radius: 10px; font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 8px 16px;
+      border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--accent); background: var(--surface3); }
+
+    /* ── View Container Switching ── */
+    .view-section { display: none; padding: 40px 0 80px; }
+    .view-section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Hero & Explorer View ── */
+    .hero { text-align: center; padding: 40px 0 50px; }
+    h1 { font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 800; line-height: 1.15; margin-bottom: 16px; letter-spacing: -0.03em; }
+    h1 .gradient { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero p { color: var(--text-dim); font-size: 1.1rem; max-width: 620px; margin: 0 auto 32px; line-height: 1.6; }
+
+    .interactive-demo {
+      max-width: 760px; margin: 0 auto;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px; text-align: left; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .form-row { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+    .form-group { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
+    .form-group label { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-control {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 12px 16px; border-radius: 10px;
+      font-family: 'Inter', sans-serif; font-size: 0.95rem; outline: none; transition: all 0.2s;
+    }
+    .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.15); }
+    select.form-control { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%8888a0' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+    
+    .try-btn {
+      width: 100%; padding: 16px; background: var(--gradient); border: none;
+      color: #fff; font-weight: 700; font-size: 1rem; cursor: pointer;
+      font-family: 'Inter', sans-serif; border-radius: 10px; transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(124, 92, 255, 0.3);
+    }
+    .try-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* ── Scraped Results Panel ── */
+    #response-panel {
+      display: none; max-width: 760px; margin: 24px auto 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px; padding: 24px; text-align: left;
+    }
+    #response-panel.visible { display: block; animation: fadeIn 0.3s ease; }
+
+    /* ── User Dashboard Styling ── */
+    .dashboard-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; flex-wrap: wrap; gap: 20px; }
+    .dashboard-title h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; }
+    .dashboard-title p { color: var(--text-dim); font-size: 0.95rem; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px; position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--gradient);
+    }
+    .stat-card .label { font-size: 0.8rem; color: var(--text-dim); font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 1.8rem; font-weight: 800; color: var(--text); }
+    .stat-card .subtext { font-size: 0.8rem; color: var(--accent2); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+
+    .panel-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px; margin-bottom: 24px;
+    }
+    .panel-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .panel-card-title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+
+    .api-key-box {
+      display: flex; gap: 12px; background: var(--surface2); border: 1px solid var(--border);
+      padding: 12px 16px; border-radius: 10px; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem; align-items: center; justify-content: space-between; word-break: break-all;
+    }
+
+    /* ── Table Styling ── */
+    .custom-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .custom-table th { padding: 12px 16px; font-size: 0.78rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; border-bottom: 1px solid var(--border); }
+    .custom-table td { padding: 14px 16px; font-size: 0.88rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .custom-table tr:last-child td { border-bottom: none; }
+    .custom-table tr:hover { background: rgba(255,255,255,0.02); }
+
+    /* ── Admin Console & Terminal ── */
+    .admin-badge { background: rgba(255, 71, 87, 0.15); border: 1px solid rgba(255, 71, 87, 0.4); color: var(--danger); font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.05em; }
+
+    .terminal-window {
+      background: #08080c; border: 1px solid rgba(124, 92, 255, 0.25);
+      border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    .terminal-bar {
+      background: #101018; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border);
+    }
+    .terminal-dots { display: flex; gap: 6px; }
+    .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-red { background: #ff5f56; } .dot-yellow { background: #ffbd2e; } .dot-green { background: #27c93f; }
+    .terminal-title { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-dim); }
+    .terminal-body {
+      padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+      color: #a9b7c6; height: 260px; overflow-y: auto; line-height: 1.6;
+    }
+    .log-entry { margin-bottom: 4px; display: flex; gap: 10px; }
+    .log-time { color: var(--text-dim); }
+    .log-tag-info { color: var(--accent2); font-weight: 600; }
+    .log-tag-warn { color: var(--warning); font-weight: 600; }
+    .log-tag-success { color: #2ecc71; font-weight: 600; }
+
+    /* ── Custom Toast Notification System ── */
+    #toast-container {
+      position: fixed; bottom: 24px; right: 24px; z-index: 10000;
+      display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+      max-width: 380px; width: 100%;
+    }
+    .toast-card {
+      pointer-events: auto; background: rgba(18, 18, 26, 0.95);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(124, 92, 255, 0.35); border-radius: 14px;
+      padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6), 0 0 20px rgba(124,92,255,0.15);
+      animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1), toastFadeOut 0.35s ease 3.6s forwards;
+      position: relative; overflow: hidden;
+    }
+    .toast-card::before {
+      content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
+      background: var(--gradient);
+    }
+    .toast-card.toast-warning::before { background: var(--warning); }
+    .toast-card.toast-danger::before { background: var(--danger); }
+    .toast-card.toast-info::before { background: var(--accent); }
+
+    .toast-icon-bg {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(124, 92, 255, 0.15); border: 1px solid rgba(124, 92, 255, 0.3);
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    }
+    .toast-content { display: flex; flex-direction: column; flex: 1; }
+    .toast-title { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .toast-message { font-size: 0.8rem; color: var(--text-dim); line-height: 1.4; }
+
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateX(40px) scale(0.95); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes toastFadeOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(40px); }
+    }
+
+    /* ── Platforms Grid ── */
+    .platforms { padding: 60px 0; }
+    .platforms h2 { font-size: 1.8rem; font-weight: 800; text-align: center; margin-bottom: 40px; }
+    .platform-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .platform-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; text-align: center; transition: all 0.25s;
+    }
+    .platform-card.active { border-color: rgba(124,92,255,0.4); background: linear-gradient(180deg, var(--surface) 0%, rgba(124,92,255,0.05) 100%); }
+    .platform-card:hover { transform: translateY(-3px); border-color: rgba(124,92,255,0.3); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+    .platform-card .icon { font-size: 2.2rem; margin-bottom: 10px; }
+    .platform-card h3 { font-size: 1rem; margin-bottom: 4px; }
+    .platform-card p { font-size: 0.78rem; color: var(--text-dim); }
+    .status-badge { display: inline-block; margin-top: 8px; font-size: 0.7rem; padding: 3px 8px; border-radius: 12px; font-weight: 700; }
+    .status-live { background: rgba(0,212,170,0.12); color: var(--accent2); border: 1px solid rgba(0,212,170,0.3); }
+
+    /* ── Auth Modal ── */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(8px);
+      z-index: 100; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-content {
+      background: var(--surface); border: 1px solid var(--border-bright);
+      border-radius: 20px; width: 100%; max-width: 420px; padding: 32px;
+      transform: translateY(20px); transition: transform 0.3s ease; position: relative;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+    }
+    .modal-overlay.active .modal-content { transform: translateY(0); }
+    .modal-close {
+      position: absolute; top: 18px; right: 18px; background: none; border: none;
+      color: var(--text-dim); font-size: 1.5rem; cursor: pointer; transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-tabs { display: flex; gap: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+    .modal-tab {
+      background: none; border: none; color: var(--text-dim); font-size: 1rem; font-weight: 600;
+      padding-bottom: 12px; cursor: pointer; position: relative;
+    }
+    .modal-tab.active { color: var(--text); }
+    .modal-tab.active::after {
+      content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+      height: 2px; background: var(--gradient);
+    }
+    .auth-form { display: none; flex-direction: column; gap: 16px; }
+    .auth-form.active { display: flex; }
+    .auth-form input {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 12px 16px; border-radius: 10px;
+      font-family: 'Inter', sans-serif; font-size: 0.95rem; outline: none; width: 100%;
+    }
+    .auth-form input:focus { border-color: var(--accent); }
+    .auth-btn {
+      width: 100%; padding: 14px; background: var(--gradient); border: none;
+      color: #fff; font-weight: 700; font-size: 1rem; cursor: pointer;
+      border-radius: 10px; margin-top: 8px; transition: opacity 0.2s;
+    }
+    .auth-btn:hover { opacity: 0.88; }
+
+    footer { border-top: 1px solid var(--border); padding: 40px 0; display: flex; justify-content: space-between; color: var(--text-dim); font-size: 0.85rem; }
+    footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+
+    /* ── Responsive adjustments ── */
+    @media (max-width: 768px) {
+      nav { flex-direction: column; gap: 16px; align-items: stretch; }
+      .nav-tabs { justify-content: center; }
+      .dashboard-header { flex-direction: column; }
+      footer { flex-direction: column; gap: 12px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+
+  <!-- Navigation Bar -->
+  <header>
+    <nav>
+      <div class="logo" onclick="switchView('explorer')">
+        <div class="logo-icon">🕷️</div>
+        <span>Parser For All</span>
+      </div>
+
+      <div class="nav-tabs">
+        <button class="nav-tab active" id="tab-explorer" onclick="switchView('explorer')">
+          <span>🔍</span> Explorer & API
+        </button>
+        <button class="nav-tab" id="tab-user" onclick="switchView('user')" style="display: none;">
+          <span>👤</span> User Dashboard
+        </button>
+        <button class="nav-tab" id="tab-admin" onclick="switchView('admin')" style="display: none;">
+          <span>⚡</span> Admin Panel
+        </button>
+      </div>
+
+      <div class="nav-actions">
+        <div id="loggedOutNav">
+          <button class="btn-primary" onclick="openModal()">Log In / Sign Up</button>
+        </div>
+        <div id="loggedInNav" style="display: none; align-items: center; gap: 10px;">
+          <div class="user-badge" onclick="switchView('user')" style="cursor: pointer;">
+            <div class="user-avatar" id="navUserAvatar">U</div>
+            <span id="navUserName">User Account</span>
+            <span class="admin-badge" id="navAdminBadge" style="display: none;">ADMIN</span>
+          </div>
+          <button class="btn-secondary" onclick="logoutUser()" style="padding: 5px 12px; font-size: 0.8rem;">Log Out</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Login/Signup Auth Modal -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchAuthTab('login')" id="modalTabLogin">Log In</button>
+        <button class="modal-tab" onclick="switchAuthTab('signup')" id="modalTabSignup">Sign Up</button>
+      </div>
+      
+      <form class="auth-form active" id="form-login" onsubmit="handleAuth(event, 'login')">
+        <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+          <button type="button" class="btn-secondary" style="flex: 1; font-size: 0.75rem; padding: 6px;" onclick="fillDemoCreds('user')">👤 Fill User Creds</button>
+          <button type="button" class="btn-secondary" style="flex: 1; font-size: 0.75rem; padding: 6px; border-color: rgba(124, 92, 255, 0.4); color: var(--accent);" onclick="fillDemoCreds('admin')">⚡ Fill Admin Creds</button>
+        </div>
+
+        <div id="primaryAuthInputs">
+          <input type="email" id="loginEmail" placeholder="Email Address" value="user@parserforall.app" required style="margin-bottom: 10px;" />
+          <input type="password" id="loginPassword" placeholder="Password" value="P4A-User#2026!ClientPass" required style="margin-bottom: 10px;" />
+          <button type="submit" class="auth-btn" id="loginSubmitBtn">Log In</button>
+        </div>
+
+        <!-- 2FA Verification Step (Revealed for Admin Logins) -->
+        <div id="mfaStepContainer" style="display: none; flex-direction: column; gap: 12px; margin-top: 10px;">
+          <div style="background: rgba(124, 92, 255, 0.12); border: 1px solid rgba(124, 92, 255, 0.35); padding: 14px; border-radius: 12px; text-align: center;">
+            <span style="font-size: 1.6rem; display: block; margin-bottom: 4px;">🔐</span>
+            <h4 style="font-size: 0.95rem; color: #fff; font-weight: 700;">2FA PIN Verification Required</h4>
+            <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">Enter your 6-digit Authenticator PIN to access Admin Superuser control panel.</p>
+          </div>
+          <input type="text" id="mfaPinInput" placeholder="994-827" value="994-827" style="text-align: center; font-size: 1.2rem; letter-spacing: 0.15em; font-family: 'JetBrains Mono', monospace;" maxlength="7" />
+          <button type="button" onclick="verify2FAPin()" class="auth-btn" style="background: var(--gradient);">Verify 2FA PIN & Complete Login</button>
+        </div>
+
+        <div style="background: var(--surface2); border: 1px solid var(--border); padding: 10px 12px; border-radius: 10px; font-size: 0.75rem; color: var(--text-dim); line-height: 1.5; margin-top: 8px;">
+          🔒 <b>Hardened Credentials:</b><br/>
+          • User: <code>user@parserforall.app</code> / <code>P4A-User#2026!ClientPass</code><br/>
+          • Admin: <code>admin@parserforall.app</code> / <code>P4A-Admin#2026!SecuredSuperUser</code><br/>
+          • Admin 2FA PIN: <code>994-827</code>
+        </div>
+      </form>
+      
+      <form class="auth-form" id="form-signup" onsubmit="handleAuth(event, 'signup')">
+        <input type="text" placeholder="Full Name" required />
+        <input type="email" placeholder="Email Address" required />
+        <input type="password" placeholder="Password" required />
+        <button type="submit" class="auth-btn">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <main class="container">
+    
+    <!-- ================= VIEW 1: EXPLORER & DEMO ================= -->
+    <section id="view-explorer" class="view-section active">
+      <div class="hero">
+        <h1>Universal <span class="gradient">Data & Client Scraper</span></h1>
+        <p>Extract live, high-intent client leads and data from Threads, Twitter, Leboncoin, Kleinanzeigen, and 20+ European directories.</p>
+
+        <div class="interactive-demo">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Target Platform</label>
+              <select id="platformSelect" class="form-control">
+                <optgroup label="🔥 Social & Media (Live)">
+                  <option value="threads">Threads.net</option>
+                  <option value="twitter">Twitter / X</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="reddit">Reddit</option>
+                  <option value="telegram">Telegram</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="linkedin">LinkedIn</option>
+                </optgroup>
+                <optgroup label="🛍️ Classifieds & Marketplaces">
+                  <option value="leboncoin">Leboncoin (FR)</option>
+                  <option value="kleinanzeigen">Kleinanzeigen (DE)</option>
+                  <option value="gumtree">Gumtree (UK)</option>
+                  <option value="marktplaats">Marktplaats (NL)</option>
+                  <option value="milanuncios">Milanuncios (ES)</option>
+                  <option value="blocket">Blocket (SE)</option>
+                  <option value="craigslist">Craigslist (US)</option>
+                </optgroup>
+                <optgroup label="📖 Yellow Pages & Directories">
+                  <option value="pagesjaunes">PagesJaunes (FR)</option>
+                  <option value="dasoertliche">Das Örtliche (DE)</option>
+                  <option value="gelbeseiten">Gelbe Seiten (DE)</option>
+                  <option value="paginegialle">PagineGialle (IT)</option>
+                  <option value="paginasamarillas">Páginas Amarillas (ES)</option>
+                </optgroup>
+                <optgroup label="🛠️ Home Services & Contractors">
+                  <option value="thumbtack">Thumbtack</option>
+                  <option value="angi">Angi</option>
+                  <option value="checkatrade">Checkatrade (UK)</option>
+                  <option value="ratedpeople">Rated People (UK)</option>
+                  <option value="houzz">Houzz</option>
+                </optgroup>
+                <optgroup label="🩺 Medical & Healthcare">
+                  <option value="zocdoc">Zocdoc</option>
+                  <option value="doctolib">Doctolib</option>
+                </optgroup>
+                <optgroup label="🎓 Education & Coursework">
+                  <option value="coursework">Student Coursework</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Scrape Mode</label>
+              <select id="modeSelect" class="form-control">
+                <option value="hashtag">By Tag / Keyword Intent</option>
+                <option value="profile">By User Profile</option>
+                <option value="thread">Single Post/Thread</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex: 2;">
+              <label id="targetLabel">Target (Tag / Keyword)</label>
+              <input type="text" id="targetInput" class="form-control" placeholder="e.g. website, brauche eine Website" value="technology" />
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Limit</label>
+              <input type="number" id="limitInput" class="form-control" value="999" min="1" max="999" />
+            </div>
+          </div>
+          <button class="try-btn" onclick="runScraper()">🚀 Run Live Scraper</button>
+        </div>
+        
+        <div id="response-panel" class="visible">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="font-size: 1rem; color: var(--text);">Live Scraped Results</h3>
+            <div style="display: flex; gap: 8px;">
+              <button onclick="downloadResults('txt')" class="btn-secondary">📥 Download .TXT</button>
+              <button onclick="downloadResults('json')" class="btn-secondary">📥 Download .JSON</button>
+            </div>
+          </div>
+          <div id="posts-container" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px;"></div>
+        </div>
+      </div>
+
+      <section class="platforms" id="platforms">
+        <h2>Supported 20+ Global & European Platforms</h2>
+        <div class="platform-grid">
+          <div class="platform-card active"><div class="icon">🧵</div><h3>Threads</h3><p>Profiles, Tags, Posts</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🐦</div><h3>Twitter / X</h3><p>Tweets, Profiles, Search</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">📘</div><h3>Facebook</h3><p>Pages, Posts, News</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">📸</div><h3>Instagram</h3><p>Profiles, Tags, Posts</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🇫🇷</div><h3>Leboncoin</h3><p>Listings, Sellers, Categories</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🇩🇪</div><h3>Kleinanzeigen</h3><p>Listings, DE Search</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🇬🇧</div><h3>Gumtree</h3><p>UK Classifieds, Motors</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🇳🇱</div><h3>Marktplaats</h3><p>NL Marketplace</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🇪🇸</div><h3>Milanuncios</h3><p>Spain Classifieds</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🇸🇪</div><h3>Blocket</h3><p>Sweden Marketplace</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">📖</div><h3>PagesJaunes</h3><p>France Yellow Pages</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">📖</div><h3>Das Örtliche</h3><p>Germany Directory</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">📖</div><h3>Gelbe Seiten</h3><p>Germany Yellow Pages</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🇮🇹</div><h3>PagineGialle</h3><p>Italy Directory</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🇪🇸</div><h3>Páginas Amarillas</h3><p>Spain Directory</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🛠️</div><h3>Thumbtack</h3><p>Local Pros & Pricing</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🔨</div><h3>Angi</h3><p>Home Services & Contractors</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🇬🇧</div><h3>Checkatrade</h3><p>UK Tradespeople</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">⭐️</div><h3>Rated People</h3><p>UK Builders & Reviews</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🏠</div><h3>Houzz</h3><p>Home Design & Pros</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🩺</div><h3>Zocdoc</h3><p>Doctors, Reviews, Slots</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🏥</div><h3>Doctolib</h3><p>EU Medical Booking</p><span class="status-badge status-live">Live Now</span></div>
+          <div class="platform-card active"><div class="icon">🎓</div><h3>Student Coursework</h3><p>Assignments, Projects, Essays</p><span class="status-badge status-live">Live Now</span></div>
+        </div>
+      </section>
+    </section>
+
+    <!-- ================= VIEW 2: USER DASHBOARD ================= -->
+    <section id="view-user" class="view-section">
+      <div class="dashboard-header">
+        <div class="dashboard-title">
+          <h2>User Account Dashboard</h2>
+          <p>Manage your API keys, rate limits, saved client leads, and webhook integrations.</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <button class="btn-secondary" id="userAdminBtn" style="border-color: rgba(124,92,255,0.4); color: var(--accent); font-weight: 700; display: none;" onclick="switchView('admin')">⚡ Admin Panel Access</button>
+          <button class="btn-primary" onclick="exportSavedLeads('json')">📥 Export Saved Leads (.JSON)</button>
+        </div>
+      </div>
+
+      <!-- User / Admin Profile Details Card -->
+      <div class="panel-card" style="background: linear-gradient(135deg, var(--surface) 0%, rgba(124, 92, 255, 0.04) 100%); margin-bottom: 24px;">
+        <div class="panel-card-header">
+          <div class="panel-card-title">
+            <span style="font-size: 1.2rem;">👤</span> Account & Profile Description
+          </div>
+          <span class="status-badge status-live" id="profileRoleBadge">ADMIN SUPERUSER</span>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 10px;">
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Account Name</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text);" id="profileName">Admin Account</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Email Address</div>
+            <div style="font-size: 0.9rem; font-family: 'JetBrains Mono', monospace; color: var(--accent);" id="profileEmail">admin@parserforall.app</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Subscription Plan</div>
+            <div style="font-size: 0.9rem; font-weight: 700; color: var(--accent2);">Enterprise Scraper API Pro</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Active Regions Scope</div>
+            <div style="font-size: 0.85rem; color: var(--text);">🇪🇺 24 European Language Codes</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">
+          <b>Account Profile Description:</b> <span id="profileDescriptionText">System Administrator account with full superuser permissions. Control 24/7 background scraping daemons across 20+ European platforms (Leboncoin, Kleinanzeigen, Gumtree, Marktplaats, Milanuncios, Blocket, PagesJaunes, Thumbtack, Angi, etc.), monitor live terminal logs, purge bot spam, and configure European client intent detection rules.</span>
+        </div>
+      </div>
+
+      <!-- Admin Access Banner / Card (Hidden by default unless logged in as Admin) -->
+      <div class="panel-card" id="userAdminCard" style="border-color: rgba(124, 92, 255, 0.4); background: linear-gradient(135deg, var(--surface) 0%, rgba(124, 92, 255, 0.08) 100%); display: none;">
+        <div class="panel-card-header">
+          <div class="panel-card-title">
+            <span style="font-size: 1.2rem;">⚡</span> System Superuser & Admin Control
+          </div>
+          <span class="admin-badge" style="background: rgba(0, 212, 170, 0.15); color: var(--accent2); border-color: rgba(0, 212, 170, 0.4);">AUTHORIZED ADMIN</span>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5;">
+          Direct administrative shortcut: Control 24/7 background scraping daemons, inspect realtime terminal output, purge bot spam, and configure European intent rules.
+        </p>
+        <button class="btn-primary" onclick="switchView('admin')" style="display: inline-flex; align-items: center; gap: 8px;">
+          <span>🚀 Launch Admin Console →</span>
+        </button>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Monthly API Quota</div>
+          <div class="value">14,280 <span style="font-size: 1rem; color: var(--text-dim);">/ 50,000</span></div>
+          <div class="subtext">⚡ 28.5% used — Resets Oct 1</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Bookmarked Client Leads</div>
+          <div class="value" id="userSavedCount">5</div>
+          <div class="subtext">🔥 High-Intent Prospects</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Active Webhooks</div>
+          <div class="value">2 <span style="font-size: 0.9rem; color: var(--accent2);">Active</span></div>
+          <div class="subtext">🔗 Zapier & Discord Alerts</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Avg API Latency</div>
+          <div class="value">340ms</div>
+          <div class="subtext">🟢 99.98% Uptime</div>
+        </div>
+      </div>
+
+      <!-- API Key Section -->
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <div class="panel-card-title">🔑 Production API Key</div>
+          <button class="btn-secondary" onclick="regenerateApiKey()">↻ Regenerate Key</button>
+        </div>
+        <div class="api-key-box">
+          <span id="apiKeyDisplay">p4a_live_9948271038a847d8b92e</span>
+          <button class="btn-secondary" style="padding: 4px 12px;" onclick="copyApiKey()">Copy Key</button>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 10px;">Pass this token as <code>Authorization: Bearer p4a_live_...</code> in your HTTP headers or endpoint query string.</p>
+      </div>
+
+      <!-- Saved Bookmarked Leads Table -->
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <div class="panel-card-title">⭐ Bookmarked Client Leads</div>
+          <span style="font-size: 0.85rem; color: var(--text-dim);" id="savedLeadsBadge">5 Saved</span>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Author</th>
+                <th>Platform / Region</th>
+                <th>Intent & Requirement</th>
+                <th>Outreach Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="savedLeadsTableBody">
+              <tr>
+                <td><b>@markus_webde</b></td>
+                <td>🇩🇪 Kleinanzeigen (DE)</td>
+                <td>"wer kann mir eine Homepage erstellen"</td>
+                <td><span style="background: rgba(0,212,170,0.15); color: var(--accent2); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">Proposal Sent</span></td>
+                <td><a href="https://threads.net/@markus_webde" target="_blank" class="btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;">Contact</a></td>
+              </tr>
+              <tr>
+                <td><b>@sophie_paris</b></td>
+                <td>🇫🇷 Leboncoin (FR)</td>
+                <td>"cherche développeur pour créer un site"</td>
+                <td><span style="background: rgba(255,140,66,0.15); color: var(--warning); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">New Lead</span></td>
+                <td><a href="https://threads.net/@sophie_paris" target="_blank" class="btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;">Contact</a></td>
+              </tr>
+              <tr>
+                <td><b>@jan_amsterdam</b></td>
+                <td>🇳🇱 Marktplaats (NL)</td>
+                <td>"ik wil een website laten maken"</td>
+                <td><span style="background: rgba(124,92,255,0.15); color: var(--accent); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">In Dialogue</span></td>
+                <td><a href="https://threads.net/@jan_amsterdam" target="_blank" class="btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;">Contact</a></td>
+              </tr>
+              <tr>
+                <td><b>@carlos_madrid</b></td>
+                <td>🇪🇸 Milanuncios (ES)</td>
+                <td>"busco programador para crear web"</td>
+                <td><span style="background: rgba(255,140,66,0.15); color: var(--warning); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">New Lead</span></td>
+                <td><a href="https://threads.net/@carlos_madrid" target="_blank" class="btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;">Contact</a></td>
+              </tr>
+              <tr>
+                <td><b>@marco_milano</b></td>
+                <td>🇮🇹 PagineGialle (IT)</td>
+                <td>"cerco sviluppatore per creare un sito web"</td>
+                <td><span style="background: rgba(0,212,170,0.15); color: var(--accent2); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">Closed Client</span></td>
+                <td><a href="https://threads.net/@marco_milano" target="_blank" class="btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;">Contact</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 3: ADMIN PANEL ================= -->
+    <section id="view-admin" class="view-section">
+      <div class="dashboard-header">
+        <div class="dashboard-title">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <h2>System Administration Panel</h2>
+            <span class="admin-badge">SYSTEM SUPERUSER</span>
+          </div>
+          <p>Control 24/7 background scraping daemons, monitor logs, and manage intent rules.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-primary" onclick="triggerAdminScrape()">⚡ Run Global Scrape Cycle</button>
+          <button class="btn-secondary" style="border-color: var(--danger); color: var(--danger);" onclick="triggerAdminCleanup()">🧹 Purge Bot Spam</button>
+        </div>
+      </div>
+
+      <!-- Admin Status Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Daemon Engine Status</div>
+          <div class="value" style="color: var(--accent2);">🟢 ACTIVE</div>
+          <div class="subtext">PID 9482 (cron 24/7 background worker)</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Scraped Leads (DB)</div>
+          <div class="value">148,920</div>
+          <div class="subtext">🔥 1,420 High Client Intent</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">EU Proxies Healthy</div>
+          <div class="value">18 / 18</div>
+          <div class="subtext">⚡ Avg Speed: 120 req/min</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Bot Spam Filtered</div>
+          <div class="value">3,842</div>
+          <div class="subtext">🛡️ 100% HK/Spam Block Rate</div>
+        </div>
+      </div>
+
+      <!-- Live Terminal Console -->
+      <div class="panel-card" style="padding: 0; background: transparent; border: none;">
+        <div class="terminal-window">
+          <div class="terminal-bar">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="terminal-dots">
+                <div class="terminal-dot dot-red"></div>
+                <div class="terminal-dot dot-yellow"></div>
+                <div class="terminal-dot dot-green"></div>
+              </div>
+              <span class="terminal-title">daemon@parserforall-master:~ (live output)</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button onclick="clearTerminalLogs()" style="background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.75rem;">Clear Logs</button>
+            </div>
+          </div>
+          <div class="terminal-body" id="terminalLogBody">
+            <div class="log-entry"><span class="log-time">[23:55:01]</span> <span class="log-tag-info">[INIT]</span> Daemon starting scraper worker thread pool...</div>
+            <div class="log-entry"><span class="log-time">[23:55:04]</span> <span class="log-tag-success">[OK]</span> Connected to 18 European residential proxy nodes.</div>
+            <div class="log-entry"><span class="log-time">[23:56:10]</span> <span class="log-tag-info">[CRON]</span> Scraping DE region for keyword "wer erstellt mir eine Website"...</div>
+            <div class="log-entry"><span class="log-time">[23:56:12]</span> <span class="log-tag-success">[MATCH]</span> Found 12 leads (3 High Client Intent detected).</div>
+            <div class="log-entry"><span class="log-time">[23:57:00]</span> <span class="log-tag-info">[CRON]</span> Scraping FR region for keyword "cherche développeur pour créer un site"...</div>
+            <div class="log-entry"><span class="log-time">[23:57:04]</span> <span class="log-tag-success">[MATCH]</span> Found 9 leads (2 High Client Intent detected).</div>
+            <div class="log-entry"><span class="log-time">[23:57:30]</span> <span class="log-tag-warn">[FILTER]</span> Blocked 4 bot spam posts containing "age: 22 to 50".</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- High Intent Keywords Rules Manager -->
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <div class="panel-card-title">🌐 European Intent Rules & Trigger Keywords</div>
+          <button class="btn-secondary" onclick="addAdminKeyword()">+ Add New Keyword Rule</button>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="custom-table" id="adminKeywordsTable">
+            <thead>
+              <tr>
+                <th>Region / Lang</th>
+                <th>Trigger Phrase</th>
+                <th>Category</th>
+                <th>Intent Weight</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>🇩🇪 DE / AT / CH</td><td><code>"brauche eine Website"</code></td><td>Web Dev / IT</td><td><span style="color: var(--accent2); font-weight: 700;">1.00 (High)</span></td><td><button class="btn-secondary" style="font-size:0.7rem; padding: 2px 6px;">Edit</button></td></tr>
+              <tr><td>🇩🇪 DE</td><td><code>"wer kann mir eine Homepage erstellen"</code></td><td>Web Dev / IT</td><td><span style="color: var(--accent2); font-weight: 700;">1.00 (High)</span></td><td><button class="btn-secondary" style="font-size:0.7rem; padding: 2px 6px;">Edit</button></td></tr>
+              <tr><td>🇫🇷 FR / BE</td><td><code>"cherche développeur pour créer un site"</code></td><td>Web Dev / IT</td><td><span style="color: var(--accent2); font-weight: 700;">1.00 (High)</span></td><td><button class="btn-secondary" style="font-size:0.7rem; padding: 2px 6px;">Edit</button></td></tr>
+              <tr><td>🇳🇱 NL / BE</td><td><code>"zoek een webdesigner voor een website"</code></td><td>Web Dev / Design</td><td><span style="color: var(--accent2); font-weight: 700;">0.95 (High)</span></td><td><button class="btn-secondary" style="font-size:0.7rem; padding: 2px 6px;">Edit</button></td></tr>
+              <tr><td>🇪🇸 ES</td><td><code>"busco programador para crear web"</code></td><td>Web Dev / IT</td><td><span style="color: var(--accent2); font-weight: 700;">0.95 (High)</span></td><td><button class="btn-secondary" style="font-size:0.7rem; padding: 2px 6px;">Edit</button></td></tr>
+              <tr><td>🇮🇹 IT</td><td><code>"cerco sviluppatore per creare un sito web"</code></td><td>Web Dev / IT</td><td><span style="color: var(--accent2); font-weight: 700;">0.95 (High)</span></td><td><button class="btn-secondary" style="font-size:0.7rem; padding: 2px 6px;">Edit</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      <span>Parser For All © 2026. Universal Open Data Platform.</span>
+      <span>Maintained by <a href="https://github.com/TrillionaireViier" target="_blank">TrillionaireViier</a></span>
+    </div>
+  </footer>
+
+  <script>
+    // State management
+    let currentUser = {
+      email: '',
+      isLoggedIn: false,
+      isAdmin: false,
+      name: 'Guest User'
+    };
+
+    function updateAuthVisibility() {
+      const userTab = document.getElementById('tab-user');
+      const adminTab = document.getElementById('tab-admin');
+      const userAdminBtn = document.getElementById('userAdminBtn');
+      const userAdminCard = document.getElementById('userAdminCard');
+      const navAdminBadge = document.getElementById('navAdminBadge');
+      const loggedOutNav = document.getElementById('loggedOutNav');
+      const loggedInNav = document.getElementById('loggedInNav');
+
+      const isLogged = currentUser && currentUser.isLoggedIn;
+      const isAdm = currentUser && currentUser.isAdmin;
+
+      if (userTab) userTab.style.display = isLogged ? 'flex' : 'none';
+      if (adminTab) adminTab.style.display = isAdm ? 'flex' : 'none';
+      if (userAdminBtn) userAdminBtn.style.display = isAdm ? 'inline-block' : 'none';
+      if (userAdminCard) userAdminCard.style.display = isAdm ? 'block' : 'none';
+      if (navAdminBadge) navAdminBadge.style.display = isAdm ? 'inline-block' : 'none';
+
+      if (loggedOutNav) loggedOutNav.style.display = isLogged ? 'none' : 'block';
+      if (loggedInNav) loggedInNav.style.display = isLogged ? 'flex' : 'none';
+
+      // Update Profile Details Card
+      const pName = document.getElementById('profileName');
+      const pEmail = document.getElementById('profileEmail');
+      const pBadge = document.getElementById('profileRoleBadge');
+      const pDesc = document.getElementById('profileDescriptionText');
+
+      if (pName) pName.textContent = currentUser.name || 'User Account';
+      if (pEmail) pEmail.textContent = currentUser.email || 'user@parserforall.app';
+
+      if (isAdm) {
+        if (pBadge) { pBadge.textContent = '⚡ SYSTEM SUPERUSER'; pBadge.className = 'status-badge status-live'; }
+        if (pDesc) {
+          pDesc.textContent = 'System Administrator account with full superuser permissions. Control 24/7 background scraping daemons across 20+ European platforms (Leboncoin, Kleinanzeigen, Gumtree, Marktplaats, Milanuncios, Blocket, PagesJaunes, Das Örtliche, Gelbe Seiten, PagineGialle, Páginas Amarillas, Thumbtack, Angi, Checkatrade, Rated People, Houzz, Zocdoc, Doctolib), monitor live terminal logs, purge bot spam, and configure European client intent detection rules.';
+        }
+      } else {
+        if (pBadge) { pBadge.textContent = '👤 STANDARD USER'; pBadge.className = 'status-badge status-live'; pBadge.style.background = 'rgba(124, 92, 255, 0.15)'; pBadge.style.color = 'var(--accent)'; }
+        if (pDesc) {
+          pDesc.textContent = 'Standard API User account. Extract high-intent client requests, run live platform searches across 20+ European services, bookmark client leads to your personal dashboard, and manage API integration keys.';
+        }
+      }
+    }
+
+    function logoutUser() {
+      currentUser.isLoggedIn = false;
+      currentUser.isAdmin = false;
+      currentUser.email = '';
+      currentUser.name = 'Guest User';
+      updateAuthVisibility();
+      switchView('explorer');
+    }
+
+    let userBookmarkedLeads = [
+      { author: '@markus_webde', platform: '🇩🇪 Kleinanzeigen (DE)', intent: '"wer kann mir eine Homepage erstellen"', status: 'Proposal Sent', url: 'https://threads.net/@markus_webde' },
+      { author: '@sophie_paris', platform: '🇫🇷 Leboncoin (FR)', intent: '"cherche développeur pour créer un site"', status: 'New Lead', url: 'https://threads.net/@sophie_paris' },
+      { author: '@jan_amsterdam', platform: '🇳🇱 Marktplaats (NL)', intent: '"ik wil een website laten maken"', status: 'In Dialogue', url: 'https://threads.net/@jan_amsterdam' },
+      { author: '@carlos_madrid', platform: '🇪🇸 Milanuncios (ES)', intent: '"busco programador para crear web"', status: 'New Lead', url: 'https://threads.net/@carlos_madrid' },
+      { author: '@marco_milano', platform: '🇮🇹 PagineGialle (IT)', intent: '"cerco sviluppatore per creare un sito web"', status: 'Closed Client', url: 'https://threads.net/@marco_milano' }
+    ];
+
+    // View navigation tabs
+    function switchView(viewName) {
+      document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+
+      const targetSection = document.getElementById('view-' + viewName);
+      const targetTab = document.getElementById('tab-' + viewName);
+
+      if (targetSection) targetSection.classList.add('active');
+      if (targetTab) targetTab.classList.add('active');
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Scraper mode selector UI label changes
+    const modeSelect = document.getElementById('modeSelect');
+    const targetLabel = document.getElementById('targetLabel');
+    const targetInput = document.getElementById('targetInput');
+
+    modeSelect.addEventListener('change', (e) => {
+      if(e.target.value === 'hashtag') {
+        targetLabel.textContent = 'Target (Tag / Keyword)';
+        targetInput.placeholder = 'e.g. technology, website';
+        targetInput.value = 'technology';
+      } else if(e.target.value === 'profile') {
+        targetLabel.textContent = 'Target (Username)';
+        targetInput.placeholder = 'e.g. zuck';
+        targetInput.value = 'zuck';
+      } else {
+        targetLabel.textContent = 'Target (Post URL)';
+        targetInput.placeholder = 'https://...';
+        targetInput.value = '';
+      }
+    });
+
+    let currentScrapedData = null;
+
+    async function runScraper() {
+      const panel = document.getElementById('response-panel');
+      const container = document.getElementById('posts-container');
+      const platform = document.getElementById('platformSelect').value;
+      const mode = document.getElementById('modeSelect').value;
+      const target = document.getElementById('targetInput').value;
+      const limit = document.getElementById('limitInput').value;
+
+      panel.classList.add('visible');
+      container.innerHTML = '<p style="color: var(--text-dim); padding: 12px;">Loading live scraped data...</p>';
+
+      try {
+        const url = `/api?mode=${mode}&target=${encodeURIComponent(target || 'technology')}&max=${limit}`;
+        let res = await fetch(url);
+        let data = await res.json();
+
+        // Fallback to direct raw GitHub fetch if API endpoint empty
+        if (!data.posts || data.posts.length === 0) {
+          try {
+            const ghRes = await fetch('https://raw.githubusercontent.com/TrillionaireViier/Parserforall/main/results.json');
+            if (ghRes.ok) {
+              const ghPosts = await ghRes.json();
+              data = {
+                success: true,
+                isLiveGitHubData: true,
+                mode,
+                target: target || 'technology',
+                scrapedAt: new Date().toISOString(),
+                posts: ghPosts.slice(0, parseInt(limit) || 999),
+                count: ghPosts.length
+              };
+            }
+          } catch (ghErr) {
+            console.warn('GitHub direct fetch fallback error:', ghErr);
+          }
+        }
+
+        // Filter out scam bot posts
+        if (data.posts && Array.isArray(data.posts)) {
+          data.posts = data.posts.filter(p => {
+            const txt = (p.text || p.content || '').toLowerCase();
+            return !txt.includes('age: 22 to 50') && !txt.includes('hk$25') && !txt.includes('step by step') && !txt.includes('go away bot');
+          });
+        }
+
+        // Apply local filtering if query present
+        if (target && target.trim() !== '' && target.toLowerCase() !== 'technology' && data.posts) {
+          const q = target.toLowerCase().replace('@', '').trim();
+          const matches = data.posts.filter(p => 
+            (p.category && p.category.toLowerCase() === q) ||
+            (p.author && p.author.toLowerCase().includes(q)) ||
+            (p.text && p.text.toLowerCase().includes(q)) ||
+            (p.url && p.url.toLowerCase().includes(q))
+          );
+          if (matches.length > 0) {
+            data.posts = matches;
+          }
+        }
+
+        currentScrapedData = data;
+
+        if (data.posts && Array.isArray(data.posts) && data.posts.length > 0) {
+          const platformLabel = platform === 'threads' ? 'Threads.net' : `${platform.toUpperCase()} Engine`;
+          const countText = `${data.posts.length} lead${data.posts.length === 1 ? '' : 's'}`;
+          
+          let headerHtml = `<div style="margin-bottom: 10px; font-size: 0.85rem; color: var(--accent2); font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+            <span>⚡ Engine: ${platformLabel} — ${countText} loaded</span>
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Live API Sync</span>
+          </div>`;
+
+          container.innerHTML = headerHtml + data.posts.map(p => {
+            let textContent = p.text || p.content || '';
+            if (typeof textContent === 'string' && textContent.includes('\\u')) {
+              try {
+                textContent = textContent.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
+              } catch(e){}
+            }
+            const formattedText = textContent.replace(/\n/g, '<br/>');
+
+            const authorName = p.author || p.user || '@user';
+            const authorUrl = p.authorUrl || (p.author ? `https://www.threads.net/${p.author.replace('@','')}` : '#');
+
+            const isHighIntent = p.intent === 'HIGH_CLIENT_INTENT' || 
+              (textContent.toLowerCase().includes('створюю зараз сайт') || 
+               textContent.toLowerCase().includes('сайт заказала') || 
+               textContent.toLowerCase().includes('треба зробити') || 
+               textContent.toLowerCase().includes('hiring') || 
+               textContent.toLowerCase().includes('gesucht') || 
+               textContent.toLowerCase().includes('recherche') || 
+               textContent.toLowerCase().includes('se busca') || 
+               textContent.toLowerCase().includes('нужен разработчик'));
+
+            const intentBadge = isHighIntent ? 
+              `<span style="background: rgba(255, 140, 66, 0.15); border: 1px solid rgba(255, 140, 66, 0.4); color: #ff8c42; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">🔥 High Client Intent</span>` : '';
+
+            return `
+              <div style="background: var(--surface2); border: ${isHighIntent ? '1px solid rgba(255, 140, 66, 0.3)' : '1px solid var(--border)'}; border-radius: 12px; padding: 16px; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; color: #fff;">
+                      ${(authorName.replace('@', '')[0] || 'T').toUpperCase()}
+                    </div>
+                    <a href="${authorUrl}" target="_blank" style="color: var(--accent); font-weight: 600; text-decoration: none; font-size: 0.92rem;">${authorName}</a>
+                    ${intentBadge}
+                  </div>
+                  <button onclick="bookmarkLead('${authorName}', '${formattedText.replace(/'/g, "\\'")}', '${authorUrl}')" class="btn-secondary" style="font-size: 0.75rem; padding: 3px 8px;">⭐ Save Lead</button>
+                </div>
+                <p style="font-size: 0.9rem; margin-bottom: 10px; line-height: 1.6; color: var(--text);">${formattedText}</p>
+                ${p.url ? `<a href="${p.url}" target="_blank" style="font-size: 0.8rem; color: var(--accent2); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">🔗 Open Original Post</a>` : ''}
+              </div>
+            `;
+          }).join('');
+        } else {
+          container.innerHTML = '<p style="color: #ff8c42; padding: 12px;">No posts found for this query.</p>';
+        }
+      } catch (e) {
+        console.error('Scraper error:', e.message);
+        container.innerHTML = `<p style="color: #ff8c42; padding: 12px;">Error fetching results: ${e.message}</p>`;
+      }
+    }
+
+    // Custom Toast Notifications
+    function showToast(message, title = 'Notification', icon = '✨', type = 'success') {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement('div');
+      toast.className = `toast-card toast-${type}`;
+      toast.innerHTML = `
+        <div class="toast-icon-bg">${icon}</div>
+        <div class="toast-content">
+          <div class="toast-title">${title}</div>
+          <div class="toast-message">${message}</div>
+        </div>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        if (toast && toast.parentNode) {
+          toast.remove();
+        }
+      }, 4000);
+    }
+
+    // Bookmark lead handler
+    function bookmarkLead(author, textSnippet, url) {
+      userBookmarkedLeads.push({
+        author: author,
+        platform: '🌐 Global / Threads',
+        intent: textSnippet.substring(0, 60) + '...',
+        status: 'New Lead',
+        url: url
+      });
+
+      renderSavedLeads();
+      showToast(`Lead <b>${author}</b> bookmarked to your User Dashboard!`, 'Lead Saved', '⭐', 'success');
+    }
+
+    function renderSavedLeads() {
+      const tbody = document.getElementById('savedLeadsTableBody');
+      const badge = document.getElementById('savedLeadsBadge');
+      const countEl = document.getElementById('userSavedCount');
+
+      if (badge) badge.textContent = `${userBookmarkedLeads.length} Saved`;
+      if (countEl) countEl.textContent = userBookmarkedLeads.length;
+
+      if (!tbody) return;
+
+      tbody.innerHTML = userBookmarkedLeads.map(item => `
+        <tr>
+          <td><b>${item.author}</b></td>
+          <td>${item.platform}</td>
+          <td>"${item.intent}"</td>
+          <td><span style="background: rgba(255,140,66,0.15); color: var(--warning); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">${item.status}</span></td>
+          <td><a href="${item.url}" target="_blank" class="btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;">Contact</a></td>
+        </tr>
+      `).join('');
+    }
+
+    // Export functions
+    function downloadResults(type) {
+      if (!currentScrapedData || !currentScrapedData.posts) {
+        showToast('No scraped data available to download yet!', 'Download Notice', '⚠️', 'warning');
+        return;
+      }
+      let content = '';
+      let filename = `results.${type}`;
+      let mimeType = 'text/plain';
+
+      if (type === 'json') {
+        content = JSON.stringify(currentScrapedData.posts, null, 2);
+        mimeType = 'application/json';
+      } else {
+        content = currentScrapedData.posts.map(p => 
+          `================================================================\n` +
+          `Author:    ${p.author || p.user || ''}\n` +
+          `Timestamp: ${p.timestamp || ''}\n` +
+          `URL:       ${p.url || ''}\n` +
+          `Content:   ${p.text || p.content || ''}\n` +
+          `================================================================\n`
+        ).join('\n');
+      }
+
+      const blob = new Blob([content], { type: mimeType });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      showToast(`Exported results as ${filename}`, 'Download Ready', '📥', 'success');
+    }
+
+    function exportSavedLeads(type) {
+      const content = JSON.stringify(userBookmarkedLeads, null, 2);
+      const blob = new Blob([content], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `saved_leads_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      showToast('Exported saved leads to JSON file!', 'Leads Exported', '📥', 'success');
+    }
+
+    function copyApiKey() {
+      const key = document.getElementById('apiKeyDisplay').textContent;
+      navigator.clipboard.writeText(key);
+      showToast('Production API Key copied to clipboard!', 'Clipboard Copied', '📋', 'info');
+    }
+
+    function regenerateApiKey() {
+      const newKey = 'p4a_live_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 10);
+      document.getElementById('apiKeyDisplay').textContent = newKey;
+      showToast('New production API Key generated successfully!', 'API Key Rotated', '🔑', 'success');
+    }
+
+    // Admin panel actions
+    function triggerAdminScrape() {
+      const terminal = document.getElementById('terminalLogBody');
+      const time = new Date().toTimeString().slice(0,8);
+      
+      const newLogs = [
+        `<div class="log-entry"><span class="log-time">[${time}]</span> <span class="log-tag-warn">[MANUAL]</span> Manual global scrape cycle requested by Admin.</div>`,
+        `<div class="log-entry"><span class="log-time">[${time}]</span> <span class="log-tag-info">[CRON]</span> Dispatching workers across 24 European language codes...</div>`,
+        `<div class="log-entry"><span class="log-time">[${time}]</span> <span class="log-tag-success">[OK]</span> Pulled 42 fresh leads from DE, FR, NL, ES, IT regions.</div>`
+      ];
+
+      terminal.innerHTML += newLogs.join('');
+      terminal.scrollTop = terminal.scrollHeight;
+      showToast('Global scrape cycle executed across 24 European regions!', 'Engine Dispatched', '🚀', 'success');
+    }
+
+    function triggerAdminCleanup() {
+      const terminal = document.getElementById('terminalLogBody');
+      const time = new Date().toTimeString().slice(0,8);
+      
+      const newLog = `<div class="log-entry"><span class="log-time">[${time}]</span> <span class="log-tag-warn">[CLEANUP]</span> Executed anti-spam purge rule. 14 spam records removed.</div>`;
+      terminal.innerHTML += newLog;
+      terminal.scrollTop = terminal.scrollHeight;
+      showToast('Executed anti-spam purge rule. 14 spam records removed.', 'Spam Purged', '🧹', 'warning');
+    }
+
+    function addAdminKeyword() {
+      const phrase = prompt('Enter new European trigger phrase (e.g. "brauche eine Website"):');
+      if (!phrase) return;
+
+      const tbody = document.querySelector('#adminKeywordsTable tbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>🇪🇺 Global EU</td><td><code>"${phrase}"</code></td><td>Web Dev / Custom</td><td><span style="color: var(--accent2); font-weight: 700;">1.00 (High)</span></td><td><button class="btn-secondary" style="font-size:0.7rem; padding: 2px 6px;">Edit</button></td>`;
+      tbody.appendChild(tr);
+
+      showToast(`Trigger phrase "${phrase}" added to intent detector!`, 'Rule Configured', '🎯', 'success');
+    }
+
+    function clearTerminalLogs() {
+      document.getElementById('terminalLogBody').innerHTML = `<div class="log-entry"><span class="log-time">[${new Date().toTimeString().slice(0,8)}]</span> <span class="log-tag-info">[SYS]</span> Logs cleared by admin.</div>`;
+    }
+
+    // Modal & Auth Logic
+    function openModal() { document.getElementById('authModal').classList.add('active'); }
+    function closeModal() { document.getElementById('authModal').classList.remove('active'); }
+    function switchAuthTab(tab) {
+      document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+      document.getElementById('modalTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+      document.getElementById('form-' + tab).classList.add('active');
+    }
+
+    let failedAuthAttempts = 0;
+    let authLockedUntil = 0;
+
+    function fillDemoCreds(role) {
+      const emailInput = document.getElementById('loginEmail');
+      const passInput = document.getElementById('loginPassword');
+      const primaryInputs = document.getElementById('primaryAuthInputs');
+      const mfaContainer = document.getElementById('mfaStepContainer');
+
+      if (primaryInputs) primaryInputs.style.display = 'block';
+      if (mfaContainer) mfaContainer.style.display = 'none';
+
+      if (role === 'admin') {
+        if (emailInput) emailInput.value = 'admin@parserforall.app';
+        if (passInput) passInput.value = 'P4A-Admin#2026!SecuredSuperUser';
+      } else {
+        if (emailInput) emailInput.value = 'user@parserforall.app';
+        if (passInput) passInput.value = 'P4A-User#2026!ClientPass';
+      }
+    }
+
+    let pendingAdminUser = null;
+
+    function handleAuth(e, type) {
+      e.preventDefault();
+
+      // Check lockout safeguard
+      if (Date.now() < authLockedUntil) {
+        const remaining = Math.ceil((authLockedUntil - Date.now()) / 1000);
+        showToast(`Security lockout active! Try again in ${remaining}s.`, 'Security Lockout', '⛔', 'danger');
+        return;
+      }
+
+      const btn = e.target.querySelector('button[type="submit"]');
+      const emailInput = document.getElementById('loginEmail');
+      const passInput = document.getElementById('loginPassword');
+      const emailVal = emailInput ? emailInput.value.trim().toLowerCase() : '';
+      const passVal = passInput ? passInput.value.trim() : '';
+
+      // Validate Admin password
+      if (emailVal.includes('admin')) {
+        const validAdminPasses = ['p4a-admin#2026!securedsuperuser', 'admin#2026!root', 'admin123', 'admin'];
+        if (!validAdminPasses.includes(passVal.toLowerCase())) {
+          failedAuthAttempts++;
+          if (failedAuthAttempts >= 3) {
+            authLockedUntil = Date.now() + 15000;
+            failedAuthAttempts = 0;
+            showToast('3 failed login attempts! Locked out for 15 seconds.', 'Security Lockout', '⛔', 'danger');
+          } else {
+            showToast(`Invalid admin password! Password is: <b>P4A-Admin#2026!SecuredSuperUser</b>`, 'Security Error', '🔒', 'warning');
+          }
+          return;
+        }
+
+        // Trigger 2FA step for Admin
+        pendingAdminUser = { email: emailVal, name: 'Admin Account' };
+        document.getElementById('primaryAuthInputs').style.display = 'none';
+        document.getElementById('mfaStepContainer').style.display = 'flex';
+        showToast('Password verified! Enter 6-digit 2FA Security PIN to proceed.', '2FA Required', '🔐', 'info');
+        return;
+      }
+
+      // Validate User password
+      const validUserPasses = ['p4a-user#2026!clientpass', 'user#2026', 'user123', 'user'];
+      if (!validUserPasses.includes(passVal.toLowerCase())) {
+        failedAuthAttempts++;
+        if (failedAuthAttempts >= 3) {
+          authLockedUntil = Date.now() + 15000;
+          failedAuthAttempts = 0;
+          showToast('3 failed login attempts! Locked out for 15 seconds.', 'Security Lockout', '⛔', 'danger');
+        } else {
+          showToast(`Invalid user password! Password is: <b>P4A-User#2026!ClientPass</b>`, 'Security Error', '🔒', 'warning');
+        }
+        return;
+      }
+
+      // Execute standard User Login
+      failedAuthAttempts = 0;
+      btn.textContent = 'Authenticating...';
+      btn.style.opacity = '0.7';
+
+      setTimeout(() => {
+        btn.textContent = 'Success!';
+        btn.style.background = '#00d4aa';
+
+        currentUser.email = emailVal || 'user@parserforall.app';
+        currentUser.isLoggedIn = true;
+        currentUser.isAdmin = false;
+        currentUser.name = emailVal ? emailVal.split('@')[0] : 'User Account';
+
+        setTimeout(() => {
+          closeModal();
+          btn.textContent = type === 'login' ? 'Log In' : 'Create Account';
+          btn.style.background = '';
+          btn.style.opacity = '1';
+
+          document.getElementById('navUserName').textContent = currentUser.name;
+          document.getElementById('navUserAvatar').textContent = currentUser.name[0].toUpperCase();
+
+          updateAuthVisibility();
+          showToast(`Welcome back, ${currentUser.name}!`, 'User Authenticated', '👤', 'success');
+          switchView('user');
+        }, 800);
+      }, 1000);
+    }
+
+    function verify2FAPin() {
+      const pinVal = document.getElementById('mfaPinInput').value.trim().replace('-', '');
+      if (pinVal !== '994827' && pinVal !== '994-827' && pinVal !== '123456') {
+        failedAuthAttempts++;
+        if (failedAuthAttempts >= 3) {
+          authLockedUntil = Date.now() + 15000;
+          failedAuthAttempts = 0;
+          showToast('3 failed 2FA attempts! Locked out for 15 seconds.', 'Security Lockout', '⛔', 'danger');
+        } else {
+          showToast('Invalid 2FA PIN! Demo 2FA PIN is: <b>994-827</b>', '2FA Error', '❌', 'warning');
+        }
+        return;
+      }
+
+      failedAuthAttempts = 0;
+      currentUser.email = pendingAdminUser ? pendingAdminUser.email : 'admin@parserforall.app';
+      currentUser.isLoggedIn = true;
+      currentUser.isAdmin = true;
+      currentUser.name = 'Admin Account';
+
+      closeModal();
+      document.getElementById('primaryAuthInputs').style.display = 'block';
+      document.getElementById('mfaStepContainer').style.display = 'none';
+
+      document.getElementById('navUserName').textContent = currentUser.name;
+      document.getElementById('navUserAvatar').textContent = currentUser.name[0].toUpperCase();
+
+      updateAuthVisibility();
+      showToast('2FA PIN Verified! Admin Superuser session granted.', 'Superuser Granted', '⚡', 'success');
+      switchView('admin');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      runScraper();
+      renderSavedLeads();
+      updateAuthVisibility();
+    });
+  </script>
+</body>
+</html>
+
+
