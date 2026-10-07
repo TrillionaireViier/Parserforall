@@ -913,7 +913,7 @@
       container.innerHTML = '<p style="color: var(--text-dim); padding: 12px;">Loading live scraped data...</p>';
 
       try {
-        const url = `/api?mode=${mode}&target=${encodeURIComponent(target || 'technology')}&max=${limit}`;
+        const url = `/api?platform=${encodeURIComponent(platform)}&mode=${mode}&target=${encodeURIComponent(target || 'technology')}&max=${limit}`;
         let res = await fetch(url);
         let data = await res.json();
 
@@ -946,8 +946,13 @@
           });
         }
 
+        // If target platform is Threads, show Threads posts; if another platform is selected (or platform filter applied), filter or clear if non-Threads
+        if (platform !== 'threads' && data.posts) {
+          data.posts = data.posts.filter(p => p.platform && p.platform.toLowerCase() === platform.toLowerCase());
+        }
+
         // Apply local filtering if query present
-        if (target && target.trim() !== '' && target.toLowerCase() !== 'technology' && data.posts) {
+        if (target && target.trim() !== '' && target.toLowerCase() !== 'technology' && data.posts && data.posts.length > 0) {
           const q = target.toLowerCase().replace('@', '').trim();
           const matches = data.posts.filter(p => 
             (p.category && p.category.toLowerCase() === q) ||
@@ -955,9 +960,7 @@
             (p.text && p.text.toLowerCase().includes(q)) ||
             (p.url && p.url.toLowerCase().includes(q))
           );
-          if (matches.length > 0) {
-            data.posts = matches;
-          }
+          data.posts = matches;
         }
 
         currentScrapedData = data;
