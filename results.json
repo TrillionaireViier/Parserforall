@@ -1,5 +1,15 @@
 [
   {
+    "timestamp": "2026-10-07 22:20:00 UTC",
+    "source": "Threads",
+    "author": "@sushi_kyiv_boss",
+    "category": "it",
+    "language": "RU",
+    "url": "https://www.threads.net/@sushi_kyiv_boss",
+    "intent": "HIGH_CLIENT_INTENT",
+    "text": "Ищу разработчика сайтов и приложений. Нужно сделать красивый, продающий и функциональный сайт для доставки суши! Оплата достойная, пишите в ЛС!"
+  },
+  {
     "timestamp": "2026-09-30 19:30:00 UTC",
     "source": "Threads",
     "author": "@ukr_web_student",

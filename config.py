@@ -77,8 +77,13 @@ CATEGORIES = {
         "кой може да ми направи уебсайт", "търся разработчик за онлайн магазин",
         "trebam nekoga za izradu web shopa", "iščem izdelovalca spletnih strani",
 
-        # Ukraine & RU
-        "створюю зараз сайт", "сайт заказала", "треба зробити сайт", "потрібен сайт", "шукаю розробника", "нужно сделать сайт"
+        # Ukraine & RU & Food/Sushi Delivery Specific
+        "створюю зараз сайт", "сайт заказала", "треба зробити сайт", "потрібен сайт", "шукаю розробника", "нужно сделать сайт",
+        "нужен сайт для доставки суши", "ищу разработчика сайта доставки еды", "разработка сайта для доставки суши",
+        "сайт для доставки суши и роллов", "приложение для доставки суши под ключ", "нужен веб разработчик сайт доставки",
+        "потрібен сайт для доставки суші", "шукаю розробника сайту доставки їжі", "розробка сайту для суші",
+        "sushi delivery website developer needed", "need website for food delivery business", "looking for developer for sushi delivery app",
+        "website for sushi restaurant and delivery", "online ordering website for sushi", "create food delivery website app"
     ],
 
     # ── 2. DIGITAL MARKETING & GROWTH ──
