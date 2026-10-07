@@ -1016,12 +1016,16 @@
               </div>
             `;
           }).join('');
-        } else {
-          container.innerHTML = '<p style="color: #ff8c42; padding: 12px;">No posts found for this query.</p>';
-        }
       } catch (e) {
         console.error('Scraper error:', e.message);
         container.innerHTML = `<p style="color: #ff8c42; padding: 12px;">Error fetching results: ${e.message}</p>`;
+      } finally {
+        // Auto-restart next scrape cycle automatically 3 seconds after previous finish
+        setTimeout(() => {
+          if (document.getElementById('view-explorer').classList.contains('active')) {
+            runScraper();
+          }
+        }, 3000);
       }
     }
 
