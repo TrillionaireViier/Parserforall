@@ -485,6 +485,23 @@
               <input type="number" id="limitInput" class="form-control" value="999" min="1" max="999" />
             </div>
           </div>
+
+          <!-- Quick Select Tags Bar -->
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">🔥 Quick Select Key Tags & Categories:</label>
+            <div id="quickTagsContainer" style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn-secondary" onclick="selectQuickTag('technology')" style="font-size: 0.78rem; padding: 4px 10px;">💻 technology</button>
+              <button type="button" class="btn-secondary" onclick="selectQuickTag('it')" style="font-size: 0.78rem; padding: 4px 10px;">⚡ IT & Web Dev</button>
+              <button type="button" class="btn-secondary" onclick="selectQuickTag('sushi')" style="font-size: 0.78rem; padding: 4px 10px; border-color: rgba(255,140,66,0.4); color: #ff8c42;">🍣 sushi delivery</button>
+              <button type="button" class="btn-secondary" onclick="selectQuickTag('website')" style="font-size: 0.78rem; padding: 4px 10px;">🌐 website</button>
+              <button type="button" class="btn-secondary" onclick="selectQuickTag('marketing')" style="font-size: 0.78rem; padding: 4px 10px;">📊 marketing</button>
+              <button type="button" class="btn-secondary" onclick="selectQuickTag('businessplan')" style="font-size: 0.78rem; padding: 4px 10px;">💼 businessplan</button>
+              <button type="button" class="btn-secondary" onclick="selectQuickTag('ukr_web_student')" style="font-size: 0.78rem; padding: 4px 10px;">🇺🇦 @ukr_web_student</button>
+              <button type="button" class="btn-secondary" onclick="selectQuickTag('de_hamburg_biz')" style="font-size: 0.78rem; padding: 4px 10px;">🇩🇪 @de_hamburg_biz</button>
+              <button type="button" class="btn-secondary" onclick="selectQuickTag('sushi_kyiv_boss')" style="font-size: 0.78rem; padding: 4px 10px;">🍣 @sushi_kyiv_boss</button>
+            </div>
+          </div>
+
           <button class="try-btn" onclick="runScraper()">🚀 Run Live Scraper</button>
         </div>
         
@@ -900,6 +917,14 @@
     });
 
     let currentScrapedData = null;
+
+    function selectQuickTag(tag) {
+      const input = document.getElementById('targetInput');
+      if (input) {
+        input.value = tag;
+        runScraper();
+      }
+    }
 
     async function runScraper() {
       const panel = document.getElementById('response-panel');
