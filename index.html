@@ -979,13 +979,23 @@
         // Apply local filtering if query present
         if (target && target.trim() !== '' && target.toLowerCase() !== 'technology' && data.posts && data.posts.length > 0) {
           const q = target.toLowerCase().replace('@', '').trim();
-          const matches = data.posts.filter(p => 
-            (p.category && p.category.toLowerCase() === q) ||
-            (p.author && p.author.toLowerCase().includes(q)) ||
-            (p.text && p.text.toLowerCase().includes(q)) ||
-            (p.url && p.url.toLowerCase().includes(q))
-          );
-          data.posts = matches;
+          const matches = data.posts.filter(p => {
+            const cat = (p.category || '').toLowerCase();
+            const aut = (p.author || p.user || '').toLowerCase();
+            const txt = (p.text || p.content || '').toLowerCase();
+            const urlStr = (p.url || '').toLowerCase();
+            const intentStr = (p.intent || '').toLowerCase();
+            const langStr = (p.language || '').toLowerCase();
+
+            if (q === 'sushi' || q === 'суши' || q === 'суші') {
+              return txt.includes('суши') || txt.includes('суші') || txt.includes('sushi') || aut.includes('sushi');
+            }
+
+            return cat === q || cat.includes(q) || aut.includes(q) || txt.includes(q) || urlStr.includes(q) || intentStr.includes(q) || langStr.includes(q);
+          });
+          if (matches.length > 0) {
+            data.posts = matches;
+          }
         }
 
         currentScrapedData = data;
